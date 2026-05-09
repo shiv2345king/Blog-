@@ -15,7 +15,11 @@ import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
-router.post("/register", registerUser);
+router.post(
+  "/register",
+  upload.fields([{ name: "avatar", maxCount: 1 }]),
+  registerUser
+);
 router.post("/login", loginUser);
 router.post("/logout", verifyJwt, logoutUser);
 router.post("/refresh-token", refreshAccessToken);

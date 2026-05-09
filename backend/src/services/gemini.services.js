@@ -3,14 +3,22 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const reviewBlogContent = async (content) => {
-    const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash"
-    });
+    try {
 
-    const prompt = `
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+        });
+
+        const prompt = `
 You are a professional grammar editor.
 
-Analyze the following blog content and return ONLY JSON in this format:
+Analyze the following blog content and return ONLY valid raw JSON.
+
+Do NOT wrap the JSON in markdown.
+Do NOT use \`\`\`json.
+Do NOT add explanations.
+
+Return format:
 
 {
   "errors": [
@@ -27,13 +35,22 @@ Content:
 """${content}"""
 `;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+        const result = await model.generateContent(prompt);
 
-    try {
+        let text = result.response.text();
+
+        console.log("RAW GEMINI RESPONSE:", text);
+
+        // 🔥 Remove markdown wrapping if Gemini still adds it
+        text = text
+            .replace(/```json/g, "")
+            .replace(/```/g, "")
+            .trim();
+
         return JSON.parse(text);
-    } catch (err) {
-        console.error("Parsing error:", text);
-        throw new Error("Invalid AI response format");
+
+    } catch (error) {
+        console.error("Gemini Service Error:", error);
+        throw error;
     }
 };

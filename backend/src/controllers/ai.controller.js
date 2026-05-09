@@ -2,6 +2,9 @@ import { reviewBlogContent } from "../services/gemini.services.js";
 
 export const reviewBlog = async (req, res) => {
     try {
+
+        console.log("REQ BODY:", req.body);
+
         const { content } = req.body;
 
         if (!content) {
@@ -13,15 +16,19 @@ export const reviewBlog = async (req, res) => {
 
         const result = await reviewBlogContent(content);
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             data: result
         });
+
     } catch (error) {
-        console.error("Review Error:", error);
-        res.status(500).json({
+
+        console.error("FULL AI ERROR:", error);
+
+        return res.status(500).json({
             success: false,
-            message: "Failed to analyze blog"
+            message: error.message,
+            stack: error.stack
         });
     }
 };
