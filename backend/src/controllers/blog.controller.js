@@ -47,15 +47,27 @@ export const createBlog = asyncHandler(async (req, res) => {
    GET ALL BLOGS
 ========================= */
 export const getAllBlogs = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
+
     const blogs = await Blog.find()
         .populate("owner", "username email");
 
+    const likes = await Like.find(userId ? { user: userId } : {});
+
+    const likedBlogIds = new Set(
+        likes.map(l => l.blog.toString())
+    );
+
+    const enrichedBlogs = blogs.map(blog => ({
+        ...blog.toObject(),
+        isLikedByMe: likedBlogIds.has(blog._id.toString()),
+    }));
+
     return res.status(200).json({
         success: true,
-        data: blogs,
+        data: enrichedBlogs,
     });
 });
-
 
 /* =========================
    GET BLOG BY ID

@@ -11,13 +11,11 @@ import { verifyJwt } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-/* ================= PUBLIC ROUTES ================= */
-
+/* PUBLIC READ */
 router.get("/blog/:id", getCommentsForBlog);
 router.get("/:commentId", getCommentById);
 
-/* ================= PROTECTED ROUTES ================= */
-
+/* PROTECTED ACTIONS */
 router.post("/blog/:id", verifyJwt, addComment);
 router.put("/:commentId", verifyJwt, updateComment);
 router.delete("/:commentId", verifyJwt, deleteComment);

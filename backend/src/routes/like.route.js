@@ -15,12 +15,10 @@ import { verifyJwt } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-/* ================= ALL LIKE ROUTES ARE PROTECTED ================= */
-
+/* ALL PROTECTED */
 router.use(verifyJwt);
 
 /* BLOG LIKES */
-
 router.post("/blog/:id", likeBlog);
 router.delete("/blog/:id", unlikeBlog);
 
@@ -29,7 +27,6 @@ router.get("/blog/liked", getLikedBlogsForUser);
 router.get("/blog/:id/count", getLikeCountForBlog);
 
 /* COMMENT LIKES */
-
 router.post("/comment/:id", likeComment);
 router.delete("/comment/:id", unlikeComment);
 

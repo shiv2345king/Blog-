@@ -17,14 +17,12 @@ import { upload } from "../middlewares/multer.middleware.js";
 const router = Router();
 
 /* ================= PUBLIC ROUTES ================= */
-
 router.get("/", getAllBlogs);
 router.get("/:id/stats", getBlogStats);
 router.get("/:id/feedback", getBlogFeedback);
 router.get("/:id", getBlogById);
 
 /* ================= PROTECTED ROUTES ================= */
-
 router.use(verifyJwt);
 
 /* CREATE BLOG */
@@ -34,7 +32,7 @@ router.post(
   createBlog
 );
 
-/* MY BLOGS (IMPORTANT ADDITION) */
+/* MY BLOGS */
 router.get("/my", getMyBlogs);
 
 /* LIKED BLOGS */
