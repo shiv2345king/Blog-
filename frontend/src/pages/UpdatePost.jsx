@@ -11,29 +11,38 @@ function UpdatePost() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
+    const fetchPost = async () => {
       try {
+        setLoading(true);
+
         const res = await blogService.getBlog(id);
+        const blog = res?.data ?? res;
 
-        const blog = res?.data;
-
-        if (!blog?._id) return navigate("/");
+        if (!blog?._id) {
+          navigate("/");
+          return;
+        }
 
         setPost(blog);
-      } catch {
+      } catch (err) {
+        console.error(err);
         navigate("/");
       } finally {
         setLoading(false);
       }
     };
 
-    load();
-  }, [id]);
+    fetchPost();
+  }, [id, navigate]);
 
-  if (loading) return <div>Loading...</div>;
-  if (!post) return <div>Not found</div>;
+  if (loading) return <div className="text-center py-10">Loading...</div>;
+  if (!post) return <div className="text-center py-10">Post not found</div>;
 
-  return <PostForm post={post} />;
+  return (
+    <div className="py-8">
+      <PostForm post={post} />
+    </div>
+  );
 }
 
 export default UpdatePost;

@@ -1,59 +1,48 @@
 import React, { useEffect, useState } from "react";
-import { Container, PostCard } from "../components";
+import { useNavigate, useParams } from "react-router-dom";
 import { blogService } from "../api/services/blogService";
+import PostForm from "../components/Post/PostForm";
 
-function MyPosts() {
-  const [posts, setPosts] = useState([]);
+function UpdatePost() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
+    const fetchPost = async () => {
       try {
         setLoading(true);
 
-        const res = await blogService.getMyBlogs();
+        const res = await blogService.getBlog(id);
+        const blog = res?.data ?? res;
 
-        console.log("RAW MY POSTS:", res);
+        if (!blog?._id) {
+          navigate("/");
+          return;
+        }
 
-        const blogs = res?.data ?? res ?? [];
-
-        setPosts(Array.isArray(blogs) ? blogs : []);
+        setPost(blog);
       } catch (err) {
-        console.error("MyPosts error:", err);
-        setPosts([]);
+        console.error(err);
+        navigate("/");
       } finally {
-        setLoading(false); // 🔥 IMPORTANT FIX
+        setLoading(false);
       }
     };
 
-    load();
-  }, []);
+    fetchPost();
+  }, [id, navigate]);
 
-  if (loading) {
-    return (
-      <div className="text-center py-10 text-gray-500">
-        Loading...
-      </div>
-    );
-  }
+  if (loading) return <div className="text-center py-10">Loading...</div>;
+  if (!post) return <div className="text-center py-10">Post not found</div>;
 
   return (
-    <Container>
-      <div className="py-6">
-        {posts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {posts.map((post) => (
-              <PostCard key={post._id} post={post} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-500">
-            No posts created by you
-          </p>
-        )}
-      </div>
-    </Container>
+    <div className="py-8">
+      <PostForm post={post} />
+    </div>
   );
 }
 
-export default MyPosts;
+export default UpdatePost;
