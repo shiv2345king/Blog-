@@ -1,135 +1,100 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 let isRefreshing = false;
 let failedQueue = [];
 
-// Process queued requests after token refresh
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
+const processQueue = (error) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    error ? reject(error) : resolve();
   });
   failedQueue = [];
+};
+
+const safeJson = async (response) => {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
 };
 
 const apiCall = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const token = localStorage.getItem('accessToken');
-
-  let config = {
-    method: options.method || 'GET',
+  const config = {
+    method: options.method || "GET",
+    credentials: "include",
+    ...options,
     headers: {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
+      ...(options.body instanceof FormData
+        ? {}
+        : { "Content-Type": "application/json" }),
       ...(options.headers || {}),
     },
-    credentials: 'include',
-    ...options,
   };
-
-  // Remove content-type for FormData
-  if (options.body instanceof FormData) {
-    delete config.headers['Content-Type'];
-  }
 
   try {
     let response = await fetch(url, config);
 
-    // 🔁 HANDLE TOKEN EXPIRY
-    if (response.status === 401 && !endpoint.includes('/refresh-token')) {
+    // =========================
+    // DON'T AUTO-REFRESH FOR PUBLIC USERS
+    // =========================
+    const isAuthEndpoint =
+      endpoint.includes("/users/me") ||
+      endpoint.includes("/likes") ||
+      endpoint.includes("/comments");
+
+    if (response.status === 401 && !endpoint.includes("/refresh-token")) {
+      // 🔥 If no refresh cookie exists → stop here (IMPORTANT FIX)
+      if (!isAuthEndpoint) {
+        return null;
+      }
 
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then(async (newToken) => {
-          config.headers.Authorization = `Bearer ${newToken}`;
-          const res = await fetch(url, config);
-
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.message);
-
-          return data.data || data;
-        });
+        }).then(() => apiCall(endpoint, options));
       }
 
       isRefreshing = true;
 
       try {
-        const refreshResponse = await fetch(`${API_BASE_URL}/users/refresh-token`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        const refreshResponse = await fetch(
+          `${API_BASE_URL}/users/refresh-token`,
+          {
+            method: "POST",
+            credentials: "include",
+          }
+        );
 
         if (!refreshResponse.ok) {
-          throw new Error('Refresh token failed');
+          throw new Error("Refresh failed");
         }
 
-        const refreshData = await refreshResponse.json();
-        const newAccessToken = refreshData.data?.accessToken;
-
-        if (!newAccessToken) {
-          throw new Error('No access token received');
-        }
-
-        // Save new token
-        localStorage.setItem('accessToken', newAccessToken);
-
-        processQueue(null, newAccessToken);
+        processQueue(null);
         isRefreshing = false;
 
-        // Retry original request
-        config.headers.Authorization = `Bearer ${newAccessToken}`;
-        const retryResponse = await fetch(url, config);
-
-        let retryData = null;
-        try {
-          retryData = await retryResponse.json();
-        } catch {
-          retryData = null;
-        }
-
-        if (!retryResponse.ok) {
-          throw new Error(retryData?.message || 'Retry failed');
-        }
-
-        return retryData?.data || retryData;
-
+        return apiCall(endpoint, options);
       } catch (error) {
-        processQueue(error, null);
+        processQueue(error);
         isRefreshing = false;
 
-        // Clear session ONLY (no redirect here)
-        localStorage.removeItem('accessToken');
-
-        // ❗ IMPORTANT: DO NOT redirect here
-        throw error;
+        // 🔥 IMPORTANT: DO NOT THROW FOR PUBLIC APP FLOW
+        return null;
       }
     }
 
-    // ✅ NORMAL RESPONSE
-    let data = null;
-    try {
-      data = await response.json();
-    } catch {
-      data = null;
-    }
+    const data = await safeJson(response);
 
     if (!response.ok) {
-      throw new Error(data?.message || `HTTP Error ${response.status}`);
+      return null; // 🔥 don't crash UI
     }
 
-    return data?.data || data;
-
+    return data;
   } catch (error) {
-    console.error('API Error:', error);
-    throw error;
+    console.error("API Error:", error);
+    return null;
   }
 };
 

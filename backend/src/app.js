@@ -2,43 +2,68 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
+// ================= ROUTES =================
+import userRoutes from "./routes/user.route.js";
+import blogRoutes from "./routes/blog.route.js";
+import likeRoutes from "./routes/like.route.js";
+import commentRoutes from "./routes/comment.route.js";
+import aiRoutes from "./routes/ai.route.js";
+import dashboardRoutes from "./routes/dashboard.route.js";
+
 const app = express();
 
-// CORS
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+/* ================= CORE MIDDLEWARE ================= */
 
-// Middlewares
-app.use(express.static("public"));
-app.use(cookieParser());
+// JSON parser
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 
-// Routes
-import aiRoutes from "./routes/ai.route.js";
-import userRoutes from "./routes/user.route.js";
-import blogRoutes from "./routes/blog.route.js";
-import commentRoutes from "./routes/comment.route.js";
-import likeRoutes from "./routes/like.route.js";
+// Cookies (IMPORTANT for auth refresh system)
+app.use(cookieParser());
 
-app.use("/api/ai", aiRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/blogs", blogRoutes);
-app.use("/api/comments", commentRoutes);
-app.use("/api/likes", likeRoutes);
+/* ================= CORS CONFIG ================= */
 
-// Health check
+app.use(
+  cors({
+    origin: "http://localhost:5173", // frontend (Vite)
+    credentials: true, // 🔥 REQUIRED for cookies auth
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  })
+);
+
+/* ================= HEALTH CHECK ================= */
+
 app.get("/", (req, res) => {
-  res.json({ message: "Blog Backend API is running!" });
+  res.send("API is running 🚀");
 });
 
-// 404 fallback (SAFE)
+/* ================= ROUTES ================= */
+
+// Users (auth, profile, refresh token, etc.)
+app.use("/api/users", userRoutes);
+
+// Blogs (posts CRUD)
+app.use("/api/blogs", blogRoutes);
+
+// Likes (like/unlike blogs)
+app.use("/api/likes", likeRoutes);
+
+// Comments (add/delete/list comments)
+app.use("/api/comments", commentRoutes);
+
+// AI (review, suggestions, etc.)
+app.use("/api/ai", aiRoutes);
+
+// Dashboard (user's personal data and stats)
+app.use("/api/dashboard", dashboardRoutes);
+
+/* ================= 404 HANDLER ================= */
+
 app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+  });
 });
 
 export { app };

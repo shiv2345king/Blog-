@@ -1,13 +1,7 @@
-import dotenv from 'dotenv';
+import "./env.js";
 
-// Load environment variables FIRST
-dotenv.config({
-    path: './.env',
-});
-
-// Then import everything else
-import connectDB from './db/index.js';
-import { app } from './app.js';
+import connectDB from "./db/index.js";
+import { app } from "./app.js";
 
 console.log("Cloudinary Config:", {
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? "✅ Set" : "❌ Missing",
@@ -15,12 +9,20 @@ console.log("Cloudinary Config:", {
   api_secret: process.env.CLOUDINARY_API_SECRET ? "✅ Set" : "❌ Missing",
 });
 
+console.log(
+  "Gemini Key:",
+  process.env.GEMINI_API_KEY ? "✅ Set" : "❌ Missing"
+);
+
 connectDB()
-.then(() => {
+  .then(() => {
     app.listen(process.env.PORT || 5000, () => {
-        console.log("Server is running on port", process.env.PORT || 5000);
+      console.log(
+        "Server is running on port",
+        process.env.PORT || 5000
+      );
     });
-})
-.catch((err) => {
+  })
+  .catch((err) => {
     console.log("Mongo DB connection error:", err);
-});
+  });

@@ -1,40 +1,58 @@
-import apiCall from "../api";
+import apiCall from "../apiConfig.js";
 
 export const blogService = {
-  // Get all blogs
-  getAllBlogs: (params = {}) => {
-    const queryString = new URLSearchParams(params).toString();
-    return apiCall(`/blogs${queryString ? `?${queryString}` : ''}`);
+  getAllBlogs: async () => {
+    const res = await apiCall("/blogs");
+    return res?.data ?? res ?? [];
   },
 
-  // Get blog by ID
-  getBlogById: (id) => apiCall(`/blogs/${id}`),
+  getBlog: async (id) => {
+    if (!id) return null;
 
-  // Create blog with image
-  createBlog: (formData) => apiCall('/blogs', {
-    method: 'POST',
-    body: formData,
-    headers: {}, // Don't set Content-Type for FormData
-  }),
+    const res = await apiCall(`/blogs/${id}`);
+    return res?.data ?? res ?? null;
+  },
 
-  // Update blog
-  updateBlog: (id, formData) => apiCall(`/blogs/${id}`, {
-    method: 'PUT',
-    body: formData,
-    headers: {},
-  }),
+  createBlog: async (payload) => {
+    const formData = new FormData();
+    Object.entries(payload).forEach(([k, v]) => {
+      if (v) formData.append(k, v);
+    });
 
-  // Delete blog
-  deleteBlog: (id) => apiCall(`/blogs/${id}`, {
-    method: 'DELETE',
-  }),
+    const res = await apiCall("/blogs", {
+      method: "POST",
+      body: formData,
+    });
 
-  // Get blog stats
-  getBlogStats: (id) => apiCall(`/blogs/${id}/stats`),
+    return res?.data ?? res;
+  },
 
-  // Get liked blogs
-  getLikedBlogs: () => apiCall('/blogs/liked'),
+  deleteBlog: async (id) => {
+    if (!id) return null;
 
-  // Get blog feedback
-  getBlogFeedback: (id) => apiCall(`/blogs/${id}/feedback`),
+    const res = await apiCall(`/blogs/${id}`, {
+      method: "DELETE",
+    });
+
+    return res?.data ?? res;
+  },
+
+  getBlogStats: async (id) => {
+    if (!id) return null;
+
+    const res = await apiCall(`/blogs/${id}/stats`);
+    return res?.data ?? res;
+  },
+
+  getLikedBlogs: async () => {
+    const res = await apiCall("/blogs/liked");
+    return res?.data ?? [];
+  },
+
+  getBlogFeedback: async (id) => {
+    if (!id) return null;
+
+    const res = await apiCall(`/blogs/${id}/feedback`);
+    return res?.data ?? res;
+  },
 };

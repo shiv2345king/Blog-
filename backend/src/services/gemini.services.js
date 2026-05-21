@@ -1,56 +1,89 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(
+  process.env.GEMINI_API_KEY
+);
 
-export const reviewBlogContent = async (content) => {
+export const reviewBlogContent =
+  async (content) => {
     try {
-
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
+      const model =
+        genAI.getGenerativeModel({
+          model: "gemini-2.5-flash",
         });
 
-        const prompt = `
+      const prompt = `
 You are a professional grammar editor.
 
-Analyze the following blog content and return ONLY valid raw JSON.
+Analyze the blog content.
 
-Do NOT wrap the JSON in markdown.
-Do NOT use \`\`\`json.
-Do NOT add explanations.
+Return ONLY valid JSON.
 
-Return format:
+Format:
 
 {
   "errors": [
     {
-      "original": "wrong sentence",
-      "suggestion": "correct sentence",
+      "original": "wrong text",
+      "suggestion": "correct text",
       "issue": "grammar/spelling/punctuation"
     }
   ],
-  "correctedText": "fully corrected version of the blog"
+  "correctedText": "full corrected blog"
 }
 
-Content:
-"""${content}"""
+IMPORTANT:
+- If there are NO mistakes:
+  - return empty errors array
+  - correctedText should still contain the full content
+- Do NOT wrap JSON in markdown
+
+Blog Content:
+${content}
 `;
 
-        const result = await model.generateContent(prompt);
+      const result =
+        await model.generateContent(
+          prompt
+        );
 
-        let text = result.response.text();
+      let text =
+        result.response.text();
 
-        console.log("RAW GEMINI RESPONSE:", text);
+      console.log(
+        "RAW GEMINI:",
+        text
+      );
 
-        // 🔥 Remove markdown wrapping if Gemini still adds it
-        text = text
-            .replace(/```json/g, "")
-            .replace(/```/g, "")
-            .trim();
+      // remove markdown if added
+      text = text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
 
-        return JSON.parse(text);
+      const parsed =
+        JSON.parse(text);
 
+      return parsed;
     } catch (error) {
-        console.error("Gemini Service Error:", error);
-        throw error;
+      console.error(
+        "Gemini Service Error:",
+        error.message
+      );
+
+      // IMPORTANT FIX
+      return {
+        correctedText: content,
+        errors: [
+          {
+            original:
+              "AI Service Error",
+            suggestion:
+              "Please try again",
+            issue:
+              error.message,
+          },
+        ],
+      };
     }
-};
+  };

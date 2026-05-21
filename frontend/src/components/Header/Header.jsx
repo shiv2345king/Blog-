@@ -1,56 +1,55 @@
-import React from 'react'
-import { Link, useNavigate } from 'react-router-dom';
-import { Logo, LogoutBtn, Container } from '../index'
-import { useSelector } from 'react-redux'
+import React from "react";
+import { Link } from "react-router-dom";
+import { Logo, LogoutBtn, Container } from "../index";
+import { useSelector } from "react-redux";
 
 function Header() {
-  const userStatus = useSelector((state) => !!state.user.user);
-  const navigate = useNavigate();
+  const user = useSelector((state) => state.user.user);
 
   const navOptions = [
     { name: "Home", slug: "/", active: true },
-    { name: "Login", slug: "/login", active: !userStatus },
-    { name: "Sign Up", slug: "/signup", active: !userStatus },
-    { name: "Dashboard", slug: "/dashboard", active: userStatus },
-    {name: "Add post", slug: "/add-post", active: userStatus},
-    {name: "My posts", slug: "/my-posts", active: userStatus},
+    { name: "Login", slug: "/login", active: !user },
+    { name: "Sign Up", slug: "/signup", active: !user },
+    { name: "Dashboard", slug: "/dashboard", active: user },
+    { name: "Add Post", slug: "/add-post", active: user },
+    { name: "All Posts", slug: "/all-posts", active: user },
   ];
 
   return (
-    <header className='py-3 shadow bg-gray-500'>
+    <header className="sticky top-0 z-50 bg-slate-900 shadow-md border-b border-slate-700">
       <Container>
-        <nav className='flex'>
-          <div className='mr-4'>
-            <Link to='/'>
-              <Logo width='70px' />
-            </Link>
-          </div>
+        <nav className="flex items-center justify-between h-16">
+          
+          {/* Logo */}
+          <Link to="/" className="flex items-center">
+            <Logo width="80px" />
+          </Link>
 
-          <ul className='flex ml-auto'>
+          {/* Nav Items */}
+          <ul className="flex items-center gap-2">
             {navOptions.map((item) =>
               item.active ? (
                 <li key={item.name}>
-                  <button
-                    onClick={() => navigate(item.slug)}
-                    className='inline-block px-6 py-2 duration-200 hover:bg-blue-100 rounded-full'
+                  <Link
+                    to={item.slug}
+                    className="px-4 py-2 text-sm font-medium text-gray-200 rounded-lg transition duration-300 hover:bg-blue-500 hover:text-white"
                   >
                     {item.name}
-                  </button>
+                  </Link>
                 </li>
               ) : null
             )}
 
-            {userStatus && (
-              <li>
+            {user && (
+              <li className="ml-2">
                 <LogoutBtn />
               </li>
             )}
-            
           </ul>
         </nav>
       </Container>
     </header>
-  )
+  );
 }
 
 export default Header;

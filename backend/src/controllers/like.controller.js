@@ -1,132 +1,229 @@
+import mongoose from "mongoose";
 import { ApiErrors } from "../utils/ApiErrors.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import Blog from "../models/blog.model.js";
 import Like from "../models/likes.model.js";
-import User from "../models/user.model.js";
 import Comment from "../models/comments.model.js";
 
 export const likeBlog = asyncHandler(async (req, res) => {
-    const blog = await Blog.findById(req.params.id);
-    if(!blog) {
-        throw new ApiErrors(404,"Blog Not Found")
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiErrors(400, "Invalid blog id");
     }
-    const existingLike = await Like.findOne({ blog: blog._id, user: req.user._id });
-    if(existingLike) {
-        throw new ApiErrors(400,"You have already liked this blog")
+
+    const blog = await Blog.findById(id);
+
+    if (!blog) {
+        throw new ApiErrors(404, "Blog Not Found");
     }
+
+    const existingLike = await Like.findOne({
+        blog: blog._id,
+        user: req.user._id,
+    });
+
+    if (existingLike) {
+        return res.status(200).json({
+            success: true,
+            message: "Blog already liked",
+            liked: true,
+        });
+    }
+
     const like = await Like.create({
         blog: blog._id,
         user: req.user._id,
-        likedBy: req.user.username
+        likedBy: req.user.username,
     });
-    res.status(201).json({
+
+    return res.status(201).json({
         success: true,
-        data: like
+        liked: true,
+        data: like,
     });
 });
 
 export const unlikeBlog = asyncHandler(async (req, res) => {
-    const blog = await Blog.findById(req.params.id);
-    if(!blog) {
-        throw new ApiErrors(404,"Blog Not Found")
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiErrors(400, "Invalid blog id");
     }
-    const existingLike = await Like.findOne({ blog: blog._id, user: req.user._id });
-    if(!existingLike) {
-        throw new ApiErrors(400,"You have not liked this blog")
+
+    const blog = await Blog.findById(id);
+
+    if (!blog) {
+        throw new ApiErrors(404, "Blog Not Found");
     }
-    await existingLike.remove();
-    res.status(200).json({
+
+    const existingLike = await Like.findOne({
+        blog: blog._id,
+        user: req.user._id,
+    });
+
+    if (!existingLike) {
+        return res.status(200).json({
+            success: true,
+            message: "Blog already unliked",
+            liked: false,
+        });
+    }
+
+    await existingLike.deleteOne();
+
+    return res.status(200).json({
         success: true,
-        message: "Blog unliked successfully"
+        liked: false,
+        message: "Blog unliked successfully",
     });
 });
 
 export const getLikesForBlog = asyncHandler(async (req, res) => {
-    const blog = await Blog.findById(req.params.id);
-    if(!blog) {
-        throw new ApiErrors(404,"Blog Not Found")
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiErrors(400, "Invalid blog id");
     }
-    const likes = await Like.find({ blog: blog._id }).populate("user", "username email");
-    res.status(200).json({
+
+    const likes = await Like.find({ 
+        blog: new mongoose.Types.ObjectId(id) 
+    }).populate("user", "username email");
+
+    return res.status(200).json({
         success: true,
-        data: likes
+        data: likes,
     });
 });
 
 export const getLikedBlogsForUser = asyncHandler(async (req, res) => {
-    const likes = await Like.find({ user: req.user._id }).populate("blog", "title content");
-    res.status(200).json({
+    const likes = await Like.find({
+        user: req.user._id,
+        blog: { $exists: true, $ne: null },
+    }).populate("blog", "_id");
+
+    return res.status(200).json({
         success: true,
-        data: likes
+        data: likes,
     });
 });
 
 export const getLikeCountForBlog = asyncHandler(async (req, res) => {
-    const blog = await Blog.findById(req.params.id);
-    if(!blog) {
-        throw new ApiErrors(404,"Blog Not Found")
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiErrors(400, "Invalid blog id");
     }
-    const likeCount = await Like.countDocuments({ blog: blog._id });
-    res.status(200).json({
+
+    const likeCount = await Like.countDocuments({
+        blog: new mongoose.Types.ObjectId(id),
+    });
+
+    return res.status(200).json({
         success: true,
-        data: { likeCount }
+        data: { likeCount },
     });
 });
 
 export const likeComment = asyncHandler(async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        throw new ApiErrors(400, "Invalid comment id");
+    }
+
     const comment = await Comment.findById(req.params.id);
-    if(!comment) {
-        throw new ApiErrors(404,"Comment Not Found")
+
+    if (!comment) {
+        throw new ApiErrors(404, "Comment Not Found");
     }
-    const existingLike = await Like.findOne({ comment: comment._id, user: req.user._id });
-    if(existingLike) {
-        throw new ApiErrors(400,"You have already liked this comment")
+
+    const existingLike = await Like.findOne({
+        comment: comment._id,
+        user: req.user._id,
+    });
+
+    if (existingLike) {
+        return res.status(200).json({
+            success: true,
+            liked: true,
+            message: "Comment already liked",
+        });
     }
+
     const like = await Like.create({
         comment: comment._id,
         user: req.user._id,
-        likedBy: req.user.username
+        likedBy: req.user.username,
     });
-    res.status(201).json({
+
+    return res.status(201).json({
         success: true,
-        data: like
+        liked: true,
+        data: like,
     });
 });
 
 export const unlikeComment = asyncHandler(async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        throw new ApiErrors(400, "Invalid comment id");
+    }
+
     const comment = await Comment.findById(req.params.id);
-    if(!comment) {
-        throw new ApiErrors(404,"Comment Not Found")
+
+    if (!comment) {
+        throw new ApiErrors(404, "Comment Not Found");
     }
-    const existingLike = await Like.findOne({ comment: comment._id, user: req.user._id });
-    if(!existingLike) {
-        throw new ApiErrors(400,"You have not liked this comment")
+
+    const existingLike = await Like.findOne({
+        comment: comment._id,
+        user: req.user._id,
+    });
+
+    if (!existingLike) {
+        return res.status(200).json({
+            success: true,
+            liked: false,
+            message: "Comment already unliked",
+        });
     }
-    await existingLike.remove();
-    res.status(200).json({
+
+    await existingLike.deleteOne();
+
+    return res.status(200).json({
         success: true,
-        message: "Comment unliked successfully"
+        liked: false,
+        message: "Comment unliked successfully",
     });
 });
 
-
 export const getLikeCountForComment = asyncHandler(async (req, res) => {
-    const comment = await Comment.findById(req.params.id);
-    if(!comment) {
-        throw new ApiErrors(404,"Comment Not Found")
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        throw new ApiErrors(400, "Invalid comment id");
     }
-    const likeCount = await Like.countDocuments({ comment: comment._id });
-    res.status(200).json({
+
+    const comment = await Comment.findById(req.params.id);
+
+    if (!comment) {
+        throw new ApiErrors(404, "Comment Not Found");
+    }
+
+    const likeCount = await Like.countDocuments({
+        comment: new mongoose.Types.ObjectId(comment._id),
+    });
+
+    return res.status(200).json({
         success: true,
-        data: { likeCount }
+        data: { likeCount },
     });
 });
 
 export const getLikedCommentsForUser = asyncHandler(async (req, res) => {
-    const likes = await Like.find({ user: req.user._id, comment: { $exists: true } }).populate("comment", "content");
-    res.status(200).json({
+    const likes = await Like.find({
+        user: req.user._id,
+        comment: { $exists: true },
+    }).populate("comment", "content");
+
+    return res.status(200).json({
         success: true,
-        data: likes
+        data: likes,
     });
 });
-

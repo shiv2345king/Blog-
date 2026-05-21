@@ -1,64 +1,146 @@
 import apiCall from "../apiConfig";
 
 export const userService = {
-  // Register new user (requires avatar file)
-  register: (formData) => {
-    // formData should contain: fullName, email, username, password, avatar (file)
-    return apiCall('/users/register', {
-      method: 'POST',
+  // =========================
+  // REGISTER
+  // =========================
+  register: async (formData) => {
+    if (!formData) throw new Error("FormData is required");
+
+    const res = await apiCall("/users/register", {
+      method: "POST",
       body: formData,
-      headers: {}, // Let browser set Content-Type for FormData
+      headers: {},
+      credentials: "include",
+    });
+
+    return res?.data;
+  },
+
+  // =========================
+  // LOGIN
+  // =========================
+  login: async (credentials) => {
+    if (!credentials) throw new Error("Credentials required");
+
+    const res = await apiCall("/users/login", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+
+    return res?.data;
+  },
+
+  // =========================
+  // LOGOUT
+  // =========================
+  logout: async () => {
+    return await apiCall("/users/logout", {
+      method: "POST",
+      credentials: "include",
     });
   },
 
-  // Login user
-  login: (credentials) => apiCall('/users/login', {
-    method: 'POST',
-    body: JSON.stringify(credentials),
-  }),
+  // =========================
+  // REFRESH TOKEN (COOKIE BASED — FIXED)
+  // =========================
+  refreshAccessToken: async () => {
+    return await apiCall("/users/refresh-token", {
+      method: "POST",
+      credentials: "include",
+    });
+  },
 
-  // Logout user
-  logout: () => apiCall('/users/logout', {
-    method: 'POST',
-  }),
+  // =========================
+  // CHANGE PASSWORD (BACKEND MATCHED)
+  // =========================
+  changePassword: async (passwordData) => {
+    if (!passwordData) throw new Error("Password data required");
 
-  // Refresh access token
-  refreshAccessToken: () => apiCall('/users/refresh-token', {
-    method: 'POST',
-  }),
+    const res = await apiCall("/users/change-password", {
+      method: "POST",
+      body: JSON.stringify(passwordData),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
 
-  // Change current password
-  changePassword: (passwordData) => apiCall('/users/change-password', {
-    method: 'POST',
-    body: JSON.stringify(passwordData),
-  }),
+    return res?.data;
+  },
 
-  // Get current user
-  getCurrentUser: () => apiCall('/users/me'),
+  // =========================
+  // CURRENT USER
+  // =========================
+  getCurrentUser: async () => {
+    const res = await apiCall("/users/me", {
+      credentials: "include",
+    });
 
-  // Update account details (fullName, email)
-  updateAccountDetails: (accountData) => apiCall('/users/update', {
-    method: 'PUT',
-    body: JSON.stringify(accountData),
-  }),
+    return res?.data;
+  },
 
-  // Update user avatar
-  updateUserAvatar: (avatarFile) => {
+  // =========================
+  // UPDATE ACCOUNT (MATCH BACKEND)
+  // =========================
+  updateAccountDetails: async (accountData) => {
+    if (!accountData) throw new Error("Account data required");
+
+    const res = await apiCall("/users/update-account", {
+      method: "PUT",
+      body: JSON.stringify(accountData),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+
+    return res?.data;
+  },
+
+  // =========================
+  // UPDATE AVATAR
+  // =========================
+  updateUserAvatar: async (avatarFile) => {
+    if (!avatarFile) throw new Error("Avatar file required");
+
     const formData = new FormData();
-    formData.append('avatar', avatarFile);
-    
-    return apiCall('/users/avatar', {
-      method: 'PUT',
+    formData.append("avatar", avatarFile);
+
+    const res = await apiCall("/users/avatar", {
+      method: "PUT",
       body: formData,
-      headers: {}, // Let browser set Content-Type for FormData
+      headers: {},
+      credentials: "include",
+    });
+
+    return res?.data;
+  },
+
+  // =========================
+  // DELETE ACCOUNT (MATCH BACKEND)
+  // =========================
+  deleteAccount: async () => {
+    return await apiCall("/users/delete", {
+      method: "DELETE",
+      credentials: "include",
     });
   },
 
-  // Delete user account
-  deleteAccount: () => apiCall('/users/delete', {
-    method: 'DELETE',
-  }),
+  // =========================
+  // USER PROFILE
+  // =========================
+  getUserProfile: async (username) => {
+    if (!username) throw new Error("Username required");
 
-  // Get user profile by username
-  getUserProfile: (username) => apiCall(`/users/${username}/profile`),
+    const res = await apiCall(`/users/${username}/profile`, {
+      credentials: "include",
+    });
+
+    return res?.data;
+  },
 };

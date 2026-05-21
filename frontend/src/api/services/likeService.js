@@ -1,23 +1,50 @@
-
 import apiCall from "../apiConfig";
 
 export const likeService = {
-    likeBlog: (blogId) => apiCall(`/likes/blog/${blogId}/like`,{
-        method: 'POST',
-    }),
-    unlikeBlog: (blogId) => apiCall(`/likes/blog/${blogId}/like`,{
-        method: 'DELETE',
-    }),
-    getLikesForBlog: (blogId) => apiCall(`/likes/blog/${blogId}/likes`),
-    getLikedBlogsForUser: () => apiCall('/likes/blog/liked'),
-    getLikeCountForBlog: (blogId) => apiCall(`/likes/blog/${blogId}/like-count`),
-    likeComment: (commentId) => apiCall(`/likes/comment/${commentId}/like`,{
-        method: 'POST',
-    }),
-    unlikeComment: (commentId) => apiCall(`/likes/comment/${commentId}/like`,{
-        method: 'DELETE',
-    }),
-    getLikedCommentsForUser: () => apiCall('/likes/comment/liked'),
-    getLikeCountForComment: (commentId) => apiCall(`/likes/comment/${commentId}/like-count`),
 
+  // ================= BLOG =================
+  likeBlog: (blogId) => {
+    if (!blogId) throw new Error("blogId required");
+    return apiCall(`/likes/blog/${blogId}`, { method: "POST" });
+  },
+
+  unlikeBlog: (blogId) => {
+    if (!blogId) throw new Error("blogId required");
+    return apiCall(`/likes/blog/${blogId}`, { method: "DELETE" });
+  },
+
+  getBlogLikes: (blogId) => {
+    if (!blogId) throw new Error("blogId required");
+    return apiCall(`/likes/blog/${blogId}/likes`);
+  },
+
+  getLikedBlogs: () => apiCall(`/likes/blog/liked`),
+
+  getBlogLikeCount: (blogId) => {
+    if (!blogId) throw new Error("blogId required");
+    return apiCall(`/likes/blog/${blogId}/count`);
+  },
+
+  // ================= COMMENT =================
+  likeComment: (commentId) => {
+    if (!commentId) throw new Error("commentId required");
+    return apiCall(`/likes/comment/${commentId}`, { method: "POST" });
+  },
+
+  unlikeComment: (commentId) => {
+    if (!commentId) throw new Error("commentId required");
+    return apiCall(`/likes/comment/${commentId}`, { method: "DELETE" });
+  },
+
+  getCommentLikes: (commentId) => {
+    if (!commentId) throw new Error("commentId required");
+    return apiCall(`/likes/comment/${commentId}/likes`);
+  },
+
+  getLikedComments: () => apiCall(`/likes/comment/liked`),
+
+  getCommentLikeCount: (commentId) => {
+    if (!commentId) throw new Error("commentId required");
+    return apiCall(`/likes/comment/${commentId}/count`);
+  },
 };
