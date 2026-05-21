@@ -1,26 +1,46 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
 import User from "../models/user.model.js";
-import { ApiErrors } from "../utils/ApiErrors.js";
 import jwt from "jsonwebtoken";
 
+export const verifyJwt = async (req, res, next) => {
+  try {
+    const token =
+      req.cookies?.accessToken ||
+      req.header("Authorization")?.replace("Bearer ", "");
 
-export const verifyJwt = asyncHandler(async (req, res, next) => {
-   try {
-     const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
- 
-     if(!token) {
-         throw new ApiErrors(401,"Unauthorized Access")
-     }
-    const decodedToken = jwt.verify(token,process.env.ACCESS_TOKEN_SECRET);
- 
-    const user = await User.findById(decodedToken?._id).select("-password -refreshToken")
- 
-    if(!user) {
-        throw new ApiErrors(404,"User Not Found")
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized Access: No token provided",
+      });
     }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired token",
+      });
+    }
+
+    const user = await User.findById(decoded?._id).select(
+      "-password -refreshToken"
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
     req.user = user;
     next();
-   } catch (error) {
-     throw new ApiErrors(401,"Unauthorized Access");
-   }
-});
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Authentication middleware failure",
+    });
+  }
+};
