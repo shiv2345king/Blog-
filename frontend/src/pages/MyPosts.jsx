@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Container, PostCard } from "../components/index";
+import { Container, PostCard } from "../components";
 import { blogService } from "../api/services/blogService";
 
 function MyPosts() {
@@ -13,12 +13,12 @@ function MyPosts() {
 
         const res = await blogService.getMyBlogs();
 
-        // IMPORTANT FIX: backend returns { success, data }
-        const blogs = res?.data ?? res ?? [];
+        // IMPORTANT FIX
+        const blogs = Array.isArray(res) ? res : [];
 
-        setPosts(Array.isArray(blogs) ? blogs : []);
-      } catch (error) {
-        console.error("Error fetching my posts:", error);
+        setPosts(blogs);
+      } catch (err) {
+        console.error("MyPosts error:", err);
         setPosts([]);
       } finally {
         setLoading(false);
@@ -29,7 +29,11 @@ function MyPosts() {
   }, []);
 
   if (loading) {
-    return <div className="text-center py-10">Loading...</div>;
+    return (
+      <div className="text-center py-10 text-gray-600">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -38,7 +42,9 @@ function MyPosts() {
         {posts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post) => (
-              <PostCard key={post._id} post={post} />
+              <div key={post._id} className="flex">
+                <PostCard post={post} />
+              </div>
             ))}
           </div>
         ) : (

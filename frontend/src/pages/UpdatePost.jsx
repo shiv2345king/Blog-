@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { blogService } from "../api/services/blogService";
-import { PostForm } from "../components/index.js";
+import PostForm from "../components/Post/PostForm";
 
 function UpdatePost() {
   const { id } = useParams();
@@ -11,40 +11,29 @@ function UpdatePost() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPost = async () => {
+    const load = async () => {
       try {
-        if (!id) return navigate("/");
-
-        setLoading(true);
-
         const res = await blogService.getBlog(id);
 
-        // FIX: consistent unwrap
-        const blog = res?.data ?? res;
+        const blog = res?.data;
 
         if (!blog?._id) return navigate("/");
 
         setPost(blog);
-      } catch (err) {
-        console.error("Failed to load post:", err);
+      } catch {
         navigate("/");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPost();
-  }, [id, navigate]);
+    load();
+  }, [id]);
 
-  if (loading) return <div className="text-center py-10">Loading...</div>;
+  if (loading) return <div>Loading...</div>;
+  if (!post) return <div>Not found</div>;
 
-  if (!post) return <div className="text-center py-10">Post not found</div>;
-
-  return (
-    <div className="py-8">
-      <PostForm post={post} />
-    </div>
-  );
+  return <PostForm post={post} />;
 }
 
 export default UpdatePost;
