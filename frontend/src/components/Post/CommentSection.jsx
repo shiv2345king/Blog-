@@ -10,7 +10,7 @@ function CommentSection({ blogId, currentUser }) {
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState("");
 
-  // ================= FETCH COMMENTS =================
+  // ================= FETCH =================
   useEffect(() => {
     if (!blogId) return;
     fetchComments();
@@ -19,21 +19,20 @@ function CommentSection({ blogId, currentUser }) {
   const fetchComments = async () => {
     try {
       setLoading(true);
-      const res = await commentService.getComments(blogId);
 
-      // backend returns ApiResponse → res.data is array
+      const res = await commentService.getComments(blogId);
       const list = res?.data ?? res;
 
       setComments(Array.isArray(list) ? list : []);
     } catch (err) {
-      console.error("Fetch comments error:", err);
+      console.error(err);
       setComments([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // ================= ADD COMMENT =================
+  // ================= ADD =================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -56,13 +55,13 @@ function CommentSection({ blogId, currentUser }) {
 
       setNewComment("");
     } catch (err) {
-      console.error("Add comment failed:", err);
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // ================= DELETE COMMENT =================
+  // ================= DELETE =================
   const handleDelete = async (id) => {
     if (!window.confirm("Delete comment?")) return;
 
@@ -70,29 +69,26 @@ function CommentSection({ blogId, currentUser }) {
       await commentService.deleteComment(id);
       setComments((prev) => prev.filter((c) => c._id !== id));
     } catch (err) {
-      console.error("Delete failed:", err);
+      console.error(err);
     }
   };
 
-  // ================= START EDIT =================
+  // ================= EDIT =================
   const startEdit = (comment) => {
     setEditingId(comment._id);
     setEditContent(comment.content);
   };
 
-  // ================= CANCEL EDIT =================
   const cancelEdit = () => {
     setEditingId(null);
     setEditContent("");
   };
 
-  // ================= UPDATE COMMENT (FIXED) =================
   const handleUpdate = async (id) => {
     if (!editContent.trim()) return;
 
     try {
       const res = await commentService.updateComment(id, editContent.trim());
-
       const updated = res?.data ?? res;
 
       setComments((prev) =>
@@ -105,7 +101,7 @@ function CommentSection({ blogId, currentUser }) {
 
       cancelEdit();
     } catch (err) {
-      console.error("Update failed:", err);
+      console.error(err);
     }
   };
 
@@ -118,7 +114,7 @@ function CommentSection({ blogId, currentUser }) {
         Comments ({comments.length})
       </h2>
 
-      {/* COMMENT INPUT */}
+      {/* ADD COMMENT */}
       {currentUser ? (
         <form onSubmit={handleSubmit} className="mb-6">
           <textarea
@@ -130,6 +126,7 @@ function CommentSection({ blogId, currentUser }) {
           />
 
           <button
+            type="submit"
             disabled={submitting}
             className="mt-2 bg-blue-600 text-white px-4 py-2 rounded"
           >
@@ -140,14 +137,16 @@ function CommentSection({ blogId, currentUser }) {
         <p className="text-gray-500 mb-4">Login to comment</p>
       )}
 
-      {/* COMMENTS */}
+      {/* LIST */}
       {comments.length === 0 ? (
         <p className="text-gray-500">No comments yet</p>
       ) : (
         comments.map((c) => {
+          const commentUserId = c.user?._id || c.user;
+
           const isAuthor =
             currentUser &&
-            String(currentUser._id) === String(c.user?._id || c.user);
+            String(currentUser._id) === String(commentUserId);
 
           return (
             <div key={c._id} className="border p-4 mb-3 rounded">
@@ -155,7 +154,6 @@ function CommentSection({ blogId, currentUser }) {
                 {c.user?.username || "User"}
               </div>
 
-              {/* EDIT MODE */}
               {editingId === c._id ? (
                 <>
                   <textarea
@@ -166,17 +164,17 @@ function CommentSection({ blogId, currentUser }) {
 
                   <div className="flex gap-3 mt-2">
                     <button
+                      type="button"
                       onClick={() => handleUpdate(c._id)}
                       className="text-green-600"
-                      type="button"
                     >
                       Save
                     </button>
 
                     <button
+                      type="button"
                       onClick={cancelEdit}
                       className="text-gray-500"
-                      type="button"
                     >
                       Cancel
                     </button>
