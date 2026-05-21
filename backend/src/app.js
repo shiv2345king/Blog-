@@ -18,16 +18,31 @@ const app = express();
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 
-// Cookies (IMPORTANT for auth refresh system)
+// Cookies
 app.use(cookieParser());
 
 /* ================= CORS CONFIG ================= */
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://blog-git-main-shivam-guptas-projects-cd5190e3.vercel.app",
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173", // frontend (Vite)
-    credentials: true, // 🔥 REQUIRED for cookies auth
+    origin: function (origin, callback) {
+      // allow requests with no origin (Postman/mobile apps)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -39,22 +54,11 @@ app.get("/", (req, res) => {
 
 /* ================= ROUTES ================= */
 
-// Users (auth, profile, refresh token, etc.)
 app.use("/api/users", userRoutes);
-
-// Blogs (posts CRUD)
 app.use("/api/blogs", blogRoutes);
-
-// Likes (like/unlike blogs)
 app.use("/api/likes", likeRoutes);
-
-// Comments (add/delete/list comments)
 app.use("/api/comments", commentRoutes);
-
-// AI (review, suggestions, etc.)
 app.use("/api/ai", aiRoutes);
-
-// Dashboard (user's personal data and stats)
 app.use("/api/dashboard", dashboardRoutes);
 
 /* ================= 404 HANDLER ================= */
