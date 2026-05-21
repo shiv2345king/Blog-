@@ -11,10 +11,9 @@ export const userService = {
       method: "POST",
       body: formData,
       headers: {},
-      credentials: "include",
     });
 
-    return res?.data;
+    return res; // ✅ FIX: return full response
   },
 
   // =========================
@@ -29,10 +28,9 @@ export const userService = {
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: "include",
     });
 
-    return res?.data;
+    return res; // ✅ FIX: return full response
   },
 
   // =========================
@@ -41,22 +39,20 @@ export const userService = {
   logout: async () => {
     return await apiCall("/users/logout", {
       method: "POST",
-      credentials: "include",
     });
   },
 
   // =========================
-  // REFRESH TOKEN (COOKIE BASED — FIXED)
+  // REFRESH TOKEN
   // =========================
   refreshAccessToken: async () => {
     return await apiCall("/users/refresh-token", {
       method: "POST",
-      credentials: "include",
     });
   },
 
   // =========================
-  // CHANGE PASSWORD (BACKEND MATCHED)
+  // CHANGE PASSWORD
   // =========================
   changePassword: async (passwordData) => {
     if (!passwordData) throw new Error("Password data required");
@@ -67,43 +63,35 @@ export const userService = {
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: "include",
     });
 
-    return res?.data;
+    return res;
   },
 
   // =========================
   // CURRENT USER
   // =========================
   getCurrentUser: async () => {
-    const res = await apiCall("/users/me", {
-      credentials: "include",
-    });
-
-    return res?.data;
+    return await apiCall("/users/me");
   },
 
   // =========================
-  // UPDATE ACCOUNT (MATCH BACKEND)
+  // UPDATE ACCOUNT (FIXED ROUTE)
   // =========================
   updateAccountDetails: async (accountData) => {
     if (!accountData) throw new Error("Account data required");
 
-    const res = await apiCall("/users/update-account", {
+    return await apiCall("/users/update", {
       method: "PUT",
       body: JSON.stringify(accountData),
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: "include",
     });
-
-    return res?.data;
   },
 
   // =========================
-  // UPDATE AVATAR
+  // UPDATE AVATAR (FIXED ROUTE)
   // =========================
   updateUserAvatar: async (avatarFile) => {
     if (!avatarFile) throw new Error("Avatar file required");
@@ -111,36 +99,28 @@ export const userService = {
     const formData = new FormData();
     formData.append("avatar", avatarFile);
 
-    const res = await apiCall("/users/avatar", {
+    return await apiCall("/users/avatar", {
       method: "PUT",
       body: formData,
       headers: {},
-      credentials: "include",
     });
-
-    return res?.data;
   },
 
   // =========================
-  // DELETE ACCOUNT (MATCH BACKEND)
+  // DELETE ACCOUNT
   // =========================
   deleteAccount: async () => {
     return await apiCall("/users/delete", {
       method: "DELETE",
-      credentials: "include",
     });
   },
 
   // =========================
-  // USER PROFILE
+  // PROFILE
   // =========================
   getUserProfile: async (username) => {
     if (!username) throw new Error("Username required");
 
-    const res = await apiCall(`/users/${username}/profile`, {
-      credentials: "include",
-    });
-
-    return res?.data;
+    return await apiCall(`/users/${username}/profile`);
   },
 };
