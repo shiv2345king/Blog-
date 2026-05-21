@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Button, Input, RTE, Select } from "..";
-import { blogService } from "../../api/services/blogService.js";
+import { Button, Input, RTE, Select } from "../components";
+import { blogService } from "../api/services/blogService";
 import { useNavigate } from "react-router-dom";
 
 export default function PostForm({ post }) {
@@ -15,59 +15,55 @@ export default function PostForm({ post }) {
 
   const navigate = useNavigate();
 
-  const onSubmit = async (data) => {
+  const submit = async (data) => {
     try {
       const payload = {
         title: data.title,
         content: data.content,
-        image: data.image?.[0], // file
+        image: data.image?.[0],
         status: data.status,
       };
 
-      let res;
+      let res = post
+        ? await blogService.updateBlog(post._id, payload)
+        : await blogService.createBlog(payload);
 
-      if (post) {
-        res = await blogService.updateBlog(post._id, payload);
-      } else {
-        res = await blogService.createBlog(payload);
+      // 🔥 FIX: correct unwrap (CRITICAL)
+      const saved = res?.data?.data ?? res?.data ?? res;
+
+      const id = saved?._id || saved?._id?._id;
+
+      if (!id) {
+        console.log("DEBUG SAVE RESPONSE:", res);
+        throw new Error("Blog ID missing");
       }
 
-      const saved = res?.data ?? res;
-
-      if (!saved?._id) throw new Error("Save failed");
-
-      navigate(`/posts/${saved._id}`);
+      navigate(`/posts/${id}`);
     } catch (err) {
-      console.error("POST SAVE ERROR:", err);
+      console.error("POST ERROR:", err);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(submit)} className="space-y-6">
 
-      {/* TITLE */}
       <Input label="Title" {...register("title")} />
 
-      {/* CONTENT */}
       <RTE control={control} name="content" />
 
-      {/* IMAGE INPUT (IMPORTANT FIX) */}
-      <Input type="file" accept="image/*" {...register("image")} />
+      <input type="file" accept="image/*" {...register("image")} />
 
-      {/* EXISTING IMAGE PREVIEW */}
       {post?.image && (
         <img
           src={post.image}
-          alt="preview"
           className="w-full h-60 object-cover rounded"
         />
       )}
 
-      {/* STATUS */}
       <Select options={["active", "inactive"]} {...register("status")} />
 
       <Button type="submit">
-        {post ? "Update" : "Publish"}
+        {post ? "Update Post" : "Publish"}
       </Button>
     </form>
   );

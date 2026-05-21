@@ -19,39 +19,26 @@ const router = Router();
 
 /* ================= PUBLIC ROUTES ================= */
 router.get("/", getAllBlogs);
-router.get("/:id", getBlogById);
+
+/* ================= PROTECTED READ ROUTES ================= */
+router.get("/my", verifyJwt, getMyBlogs);
+router.get("/liked", verifyJwt, getLikedBlogs);
+
+/* ================= STATS / FEEDBACK ================= */
 router.get("/:id/stats", getBlogStats);
 router.get("/:id/feedback", getBlogFeedback);
+router.get("/:id", getBlogById);
 
-/* ================= PROTECTED ROUTES ================= */
-router.use(verifyJwt);
+/* ================= MUTATIONS ================= */
+router.post("/", verifyJwt, upload.single("image"), createBlog);
 
-/* ================= BLOG CREATION ================= */
-/*
-  IMPORTANT:
-  frontend sends FormData with "image"
-  so we use upload.single("image")
-*/
-router.post(
-  "/",
-  upload.single("image"),
-  createBlog
-);
-
-/* ================= MY BLOGS ================= */
-router.get("/my", getMyBlogs);
-
-/* ================= LIKED BLOGS ================= */
-router.get("/liked", getLikedBlogs);
-
-/* ================= UPDATE BLOG ================= */
 router.put(
   "/:id",
+  verifyJwt,
   upload.single("image"),
   updateBlog
 );
 
-/* ================= DELETE BLOG ================= */
-router.delete("/:id", deleteBlog);
+router.delete("/:id", verifyJwt, deleteBlog);
 
 export default router;
