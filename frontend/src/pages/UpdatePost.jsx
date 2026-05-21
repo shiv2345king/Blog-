@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { blogService } from "../api/services/blogService.js";
-import PostForm from "../components/post-form/PostForm.js";
+import PostForm from "../components/post-form/PostForm.jsx";
 
 function UpdatePost() {
   const { id } = useParams();
