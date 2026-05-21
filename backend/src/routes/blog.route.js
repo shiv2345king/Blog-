@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import {
   createBlog,
   deleteBlog,
@@ -18,34 +19,39 @@ const router = Router();
 
 /* ================= PUBLIC ROUTES ================= */
 router.get("/", getAllBlogs);
+router.get("/:id", getBlogById);
 router.get("/:id/stats", getBlogStats);
 router.get("/:id/feedback", getBlogFeedback);
-router.get("/:id", getBlogById);
 
 /* ================= PROTECTED ROUTES ================= */
 router.use(verifyJwt);
 
-/* CREATE BLOG */
+/* ================= BLOG CREATION ================= */
+/*
+  IMPORTANT:
+  frontend sends FormData with "image"
+  so we use upload.single("image")
+*/
 router.post(
   "/",
-  upload.fields([{ name: "image", maxCount: 1 }]),
+  upload.single("image"),
   createBlog
 );
 
-/* MY BLOGS */
+/* ================= MY BLOGS ================= */
 router.get("/my", getMyBlogs);
 
-/* LIKED BLOGS */
+/* ================= LIKED BLOGS ================= */
 router.get("/liked", getLikedBlogs);
 
-/* UPDATE BLOG */
+/* ================= UPDATE BLOG ================= */
 router.put(
   "/:id",
   upload.single("image"),
   updateBlog
 );
 
-/* DELETE BLOG */
+/* ================= DELETE BLOG ================= */
 router.delete("/:id", deleteBlog);
 
 export default router;

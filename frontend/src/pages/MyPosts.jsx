@@ -7,16 +7,13 @@ function MyPosts() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchMyPosts = async () => {
+    const load = async () => {
       try {
-        setLoading(true);
+        const data = await blogService.getMyBlogs();
 
-        const res = await blogService.getMyBlogs();
+        console.log("MY POSTS:", data);
 
-        // IMPORTANT FIX
-        const blogs = Array.isArray(res) ? res : [];
-
-        setPosts(blogs);
+        setPosts(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("MyPosts error:", err);
         setPosts([]);
@@ -25,12 +22,12 @@ function MyPosts() {
       }
     };
 
-    fetchMyPosts();
+    load();
   }, []);
 
   if (loading) {
     return (
-      <div className="text-center py-10 text-gray-600">
+      <div className="text-center py-10 text-gray-500">
         Loading...
       </div>
     );
@@ -38,13 +35,11 @@ function MyPosts() {
 
   return (
     <Container>
-      <div className="w-full py-6">
+      <div className="py-6">
         {posts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {posts.map((post) => (
-              <div key={post._id} className="flex">
-                <PostCard post={post} />
-              </div>
+              <PostCard key={post._id} post={post} />
             ))}
           </div>
         ) : (

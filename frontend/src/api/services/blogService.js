@@ -1,42 +1,58 @@
 import apiCall from "../apiConfig.js";
 
-const unwrap = (res) => res?.data ?? res ?? null;
+/* ================= SAFE UNWRAP ================= */
+const unwrap = (res) => {
+  if (!res) return null;
+  return res.data ?? res;
+};
 
 export const blogService = {
+  /* ================= GET ALL BLOGS ================= */
   getAllBlogs: async () => {
     const res = await apiCall("/blogs");
-    return unwrap(res)?.data ?? [];
+    const data = unwrap(res);
+    return Array.isArray(data) ? data : [];
   },
 
+  /* ================= GET SINGLE BLOG ================= */
   getBlog: async (id) => {
     const res = await apiCall(`/blogs/${id}`);
-    return unwrap(res)?.data ?? null;
+    return unwrap(res);
   },
 
+  /* ================= CREATE BLOG ================= */
   createBlog: async (payload) => {
     const formData = new FormData();
-    Object.entries(payload).forEach(([k, v]) => v && formData.append(k, v));
+
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value) formData.append(key, value);
+    });
 
     const res = await apiCall("/blogs", {
       method: "POST",
       body: formData,
     });
 
-    return unwrap(res)?.data ?? null;
+    return unwrap(res);
   },
 
+  /* ================= UPDATE BLOG ================= */
   updateBlog: async (id, payload) => {
     const formData = new FormData();
-    Object.entries(payload).forEach(([k, v]) => v && formData.append(k, v));
+
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value) formData.append(key, value);
+    });
 
     const res = await apiCall(`/blogs/${id}`, {
       method: "PUT",
       body: formData,
     });
 
-    return unwrap(res)?.data ?? null;
+    return unwrap(res);
   },
 
+  /* ================= DELETE BLOG ================= */
   deleteBlog: async (id) => {
     const res = await apiCall(`/blogs/${id}`, {
       method: "DELETE",
@@ -45,8 +61,30 @@ export const blogService = {
     return unwrap(res);
   },
 
+  /* ================= MY BLOGS (FIXED - MAIN BUG) ================= */
   getMyBlogs: async () => {
     const res = await apiCall("/blogs/my");
-    return unwrap(res)?.data ?? [];
+    const data = unwrap(res);
+
+    return Array.isArray(data) ? data : [];
+  },
+
+  /* ================= BLOG STATS ================= */
+  getBlogStats: async (id) => {
+    const res = await apiCall(`/blogs/${id}/stats`);
+    return unwrap(res);
+  },
+
+  /* ================= LIKED BLOGS ================= */
+  getLikedBlogs: async () => {
+    const res = await apiCall("/blogs/liked");
+    const data = unwrap(res);
+    return Array.isArray(data) ? data : [];
+  },
+
+  /* ================= FEEDBACK ================= */
+  getBlogFeedback: async (id) => {
+    const res = await apiCall(`/blogs/${id}/feedback`);
+    return unwrap(res);
   },
 };

@@ -7,233 +7,206 @@ import { ApiErrors } from "../utils/ApiErrors.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
-/* =========================
-   CREATE BLOG
-========================= */
+/* ================= CREATE BLOG ================= */
 export const createBlog = asyncHandler(async (req, res) => {
-    const { title, content } = req.body;
+  const { title, content } = req.body;
 
-    if (!title || !content) {
-        throw new ApiErrors(400, "Title and Content are required");
-    }
+  if (!title || !content) {
+    throw new ApiErrors(400, "Title and Content are required");
+  }
 
-    const imageLocalPath = req.files?.image?.[0]?.path;
+  const imageLocalPath = req.file?.path || req.files?.image?.[0]?.path;
 
-    if (!imageLocalPath) {
-        throw new ApiErrors(400, "Image is required");
-    }
+  if (!imageLocalPath) {
+    throw new ApiErrors(400, "Image is required");
+  }
 
-    const imageUpload = await uploadOnCloudinary(imageLocalPath);
+  const uploaded = await uploadOnCloudinary(imageLocalPath);
 
-    if (!imageUpload) {
-        throw new ApiErrors(500, "Image upload failed");
-    }
+  if (!uploaded?.secure_url) {
+    throw new ApiErrors(500, "Image upload failed");
+  }
 
-    const blog = await Blog.create({
-        title,
-        content,
-        image: imageUpload.secure_url,
-        owner: req.user._id,
-    });
+  const blog = await Blog.create({
+    title,
+    content,
+    image: uploaded.secure_url,
+    owner: req.user._id,
+  });
 
-    return res.status(201).json({
-        success: true,
-        data: blog,
-    });
+  return res.status(201).json({
+    success: true,
+    data: blog,
+  });
 });
 
-
-/* =========================
-   GET ALL BLOGS
-========================= */
+/* ================= GET ALL BLOGS ================= */
 export const getAllBlogs = asyncHandler(async (req, res) => {
-    const userId = req.user?._id;
+  const userId = req.user?._id;
 
-    const blogs = await Blog.find()
-        .populate("owner", "username email");
+  const blogs = await Blog.find().populate("owner", "username email");
+  const likes = await Like.find();
 
-    // Get all likes for all blogs
-    const allLikes = await Like.find({});
+  const likeMap = {};
+  const likedSet = new Set();
 
-    // Build like count map
-    const likeCountMap = {};
-    const likedByUserSet = new Set();
+  likes.forEach((l) => {
+    const id = l.blog.toString();
+    likeMap[id] = (likeMap[id] || 0) + 1;
 
-    allLikes.forEach(like => {
-        const blogId = like.blog.toString();
+    if (userId && l.user.toString() === userId.toString()) {
+      likedSet.add(id);
+    }
+  });
 
-        // count
-        likeCountMap[blogId] = (likeCountMap[blogId] || 0) + 1;
+  const enriched = blogs.map((b) => ({
+    ...b.toObject(),
+    likeCount: likeMap[b._id.toString()] || 0,
+    isLikedByMe: likedSet.has(b._id.toString()),
+  }));
 
-        // user-specific
-        if (userId && like.user.toString() === userId.toString()) {
-            likedByUserSet.add(blogId);
-        }
-    });
-
-    const enrichedBlogs = blogs.map(blog => ({
-        ...blog.toObject(),
-        likeCount: likeCountMap[blog._id.toString()] || 0,
-        isLikedByMe: likedByUserSet.has(blog._id.toString()),
-    }));
-
-    return res.status(200).json({
-        success: true,
-        data: enrichedBlogs,
-    });
+  return res.status(200).json({
+    success: true,
+    data: enriched,
+  });
 });
 
-/* =========================
-   GET BLOG BY ID
-========================= */
+/* ================= GET BLOG BY ID ================= */
 export const getBlogById = asyncHandler(async (req, res) => {
-    const blog = await Blog.findById(req.params.id)
-        .populate("owner", "username email");
+  const blog = await Blog.findById(req.params.id).populate(
+    "owner",
+    "username email"
+  );
 
-    if (!blog) {
-        throw new ApiErrors(404, "Blog Not Found");
-    }
+  if (!blog) throw new ApiErrors(404, "Blog Not Found");
 
-    return res.status(200).json({
-        success: true,
-        data: blog,
-    });
+  return res.status(200).json({
+    success: true,
+    data: blog,
+  });
 });
 
+/* ================= MY BLOGS ================= */
 export const getMyBlogs = asyncHandler(async (req, res) => {
-    const blogs = await Blog.find({ owner: req.user._id })
-        .populate("owner", "username email");
+  if (!req.user?._id) {
+    throw new ApiErrors(401, "Unauthorized");
+  }
 
-    return res.status(200).json({
-        success: true,
-        data: blogs,
-    });
+  const blogs = await Blog.find({ owner: req.user._id }).populate(
+    "owner",
+    "username email"
+  );
+
+  return res.status(200).json({
+    success: true,
+    data: blogs,
+  });
 });
-/* =========================
-   UPDATE BLOG
-========================= */
+
+/* ================= UPDATE BLOG ================= */
 export const updateBlog = asyncHandler(async (req, res) => {
-    const { title, content } = req.body;
+  const { title, content } = req.body;
 
-    const blog = await Blog.findById(req.params.id);
+  const blog = await Blog.findById(req.params.id);
 
-    if (!blog) {
-        throw new ApiErrors(404, "Blog Not Found");
+  if (!blog) throw new ApiErrors(404, "Blog Not Found");
+
+  if (String(blog.owner) !== String(req.user._id)) {
+    throw new ApiErrors(403, "Not allowed");
+  }
+
+  if (title) blog.title = title;
+  if (content) blog.content = content;
+
+  // 🔥 FIX: handle both multer formats
+  const imagePath = req.file?.path || req.files?.image?.[0]?.path;
+
+  if (imagePath) {
+    const uploaded = await uploadOnCloudinary(imagePath);
+
+    if (!uploaded?.secure_url) {
+      throw new ApiErrors(500, "Image upload failed");
     }
 
-    if (blog.owner.toString() !== req.user._id.toString()) {
-        throw new ApiErrors(403, "Forbidden: Not owner");
-    }
+    blog.image = uploaded.secure_url;
+  }
 
-    if (title) blog.title = title;
-    if (content) blog.content = content;
+  await blog.save();
 
-    if (req.file) {
-        const imageUpload = await uploadOnCloudinary(req.file.path);
-        if (!imageUpload) {
-            throw new ApiErrors(500, "Image upload failed");
-        }
-        blog.image = imageUpload.secure_url;
-    }
-
-    await blog.save();
-
-    return res.status(200).json({
-        success: true,
-        data: blog,
-    });
+  return res.status(200).json({
+    success: true,
+    data: blog,
+  });
 });
 
-
-/* =========================
-   DELETE BLOG
-========================= */
+/* ================= DELETE BLOG ================= */
 export const deleteBlog = asyncHandler(async (req, res) => {
-    const blog = await Blog.findById(req.params.id);
+  const blog = await Blog.findById(req.params.id);
 
-    if (!blog) {
-        throw new ApiErrors(404, "Blog Not Found");
-    }
+  if (!blog) throw new ApiErrors(404, "Blog Not Found");
 
-    if (blog.owner.toString() !== req.user._id.toString()) {
-        throw new ApiErrors(403, "Forbidden: Not owner");
-    }
+  if (String(blog.owner) !== String(req.user._id)) {
+    throw new ApiErrors(403, "Not allowed");
+  }
 
-    await blog.deleteOne();
+  await blog.deleteOne();
 
-    return res.status(200).json({
-        success: true,
-        message: "Blog deleted successfully",
-    });
+  return res.status(200).json({
+    success: true,
+    message: "Deleted successfully",
+  });
 });
 
-
-/* =========================
-   BLOG STATS
-========================= */
+/* ================= BLOG STATS ================= */
 export const getBlogStats = asyncHandler(async (req, res) => {
-    const blog = await Blog.findById(req.params.id);
+  const blog = await Blog.findById(req.params.id);
 
-    if (!blog) {
-        throw new ApiErrors(404, "Blog Not Found");
-    }
+  if (!blog) throw new ApiErrors(404, "Blog Not Found");
 
-    const likes = await Like.countDocuments({ blog: blog._id });
-    const comments = await Comment.countDocuments({ blog: blog._id });
+  const likes = await Like.countDocuments({ blog: blog._id });
+  const comments = await Comment.countDocuments({ blog: blog._id });
 
-    const ratings = await Rating.find({ blog: blog._id });
+  const ratings = await Rating.find({ blog: blog._id });
 
-    const averageRating =
-        ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length
-            : 0;
+  const avg =
+    ratings.length > 0
+      ? ratings.reduce((s, r) => s + r.value, 0) / ratings.length
+      : 0;
 
-    return res.status(200).json({
-        success: true,
-        data: {
-            likes,
-            comments,
-            averageRating,
-        },
-    });
+  return res.status(200).json({
+    success: true,
+    data: {
+      likes,
+      comments,
+      averageRating: avg,
+    },
+  });
 });
 
-
-/* =========================
-   GET LIKED BLOGS
-========================= */
+/* ================= LIKED BLOGS ================= */
 export const getLikedBlogs = asyncHandler(async (req, res) => {
-    const likedBlogs = await Like.find({ user: req.user._id })
-        .populate("blog");
+  const liked = await Like.find({ user: req.user._id }).populate("blog");
 
-    return res.status(200).json({
-        success: true,
-        data: likedBlogs.map((l) => l.blog),
-    });
+  return res.status(200).json({
+    success: true,
+    data: liked.map((l) => l.blog),
+  });
 });
 
-
-/* =========================
-   BLOG FEEDBACK
-========================= */
+/* ================= BLOG FEEDBACK ================= */
 export const getBlogFeedback = asyncHandler(async (req, res) => {
-    const blog = await Blog.findById(req.params.id);
+  const comments = await Comment.find({ blog: req.params.id }).populate(
+    "user",
+    "username"
+  );
 
-    if (!blog) {
-        throw new ApiErrors(404, "Blog Not Found");
-    }
+  const ratings = await Rating.find({ blog: req.params.id }).populate(
+    "user",
+    "username"
+  );
 
-    const comments = await Comment.find({ blog: blog._id })
-        .populate("user", "username");
-
-    const ratings = await Rating.find({ blog: blog._id })
-        .populate("user", "username");
-
-    return res.status(200).json({
-        success: true,
-        data: {
-            comments,
-            ratings,
-        },
-    });
+  return res.status(200).json({
+    success: true,
+    data: { comments, ratings },
+  });
 });

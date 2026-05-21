@@ -5,56 +5,72 @@ import { blogService } from "../../api/services/blogService";
 import { useNavigate } from "react-router-dom";
 
 export default function PostForm({ post }) {
-  const { register, handleSubmit, control } = useForm({
-    defaultValues: post || {
-      title: "",
-      content: "",
-      status: "active",
+  const { register, handleSubmit, control, setValue } = useForm({
+    defaultValues: {
+      title: post?.title || "",
+      content: post?.content || "",
+      status: post?.status || "active",
     },
   });
 
   const navigate = useNavigate();
 
-  const submit = async (data) => {
-    const payload = {
-      title: data.title,
-      content: data.content,
-      image: data.image?.[0],
-      status: data.status,
-    };
+  const onSubmit = async (data) => {
+    try {
+      const payload = {
+        title: data.title,
+        content: data.content,
+        image: data.image?.[0],
+        status: data.status,
+      };
 
-    let res;
+      let res;
 
-    if (post?._id) {
-      res = await blogService.updateBlog(post._id, payload);
-    } else {
-      res = await blogService.createBlog(payload);
+      if (post) {
+        res = await blogService.updateBlog(post._id, payload);
+      } else {
+        res = await blogService.createBlog(payload);
+      }
+
+      const saved = res?.data ?? res;
+
+      if (!saved?._id) throw new Error("Save failed");
+
+      navigate(`/posts/${saved._id}`);
+    } catch (err) {
+      console.error(err);
     }
-
-    const saved = res?.data;
-
-    if (!saved?._id) throw new Error("Save failed");
-
-    navigate(`/posts/${saved._id}`);
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="flex flex-col gap-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
       <Input label="Title" {...register("title")} />
 
-      <RTE name="content" control={control} />
+      <RTE control={control} name="content" />
 
-      <Input type="file" {...register("image")} />
+      {/* 🔥 FIXED FILE INPUT */}
+      <input
+        type="file"
+        accept="image/*"
+        {...register("image")}
+      />
 
       {post?.image && (
-        <img src={post.image} className="w-full rounded" />
+        <img
+          src={post.image}
+          alt="preview"
+          className="w-full h-60 object-cover rounded"
+        />
       )}
 
-      <Select options={["active", "inactive"]} {...register("status")} />
+      <Select
+        options={["active", "inactive"]}
+        {...register("status")}
+      />
 
       <Button type="submit">
-        {post ? "Update Post" : "Create Post"}
+        {post ? "Update" : "Publish"}
       </Button>
     </form>
   );

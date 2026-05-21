@@ -1,5 +1,6 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://blog-qifu.onrender.com/api";
+  import.meta.env.VITE_API_URL ||
+  "https://blog-qifu.onrender.com/api";
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -25,7 +26,7 @@ const apiCall = async (endpoint, options = {}) => {
 
   const config = {
     method: options.method || "GET",
-    credentials: "include", // REQUIRED for cookies
+    credentials: "include", // REQUIRED for cookies/auth
     ...options,
     headers: {
       ...(options.body instanceof FormData
@@ -38,16 +39,13 @@ const apiCall = async (endpoint, options = {}) => {
   try {
     let response = await fetch(url, config);
 
-    const isRefreshEndpoint = endpoint.includes("/refresh-token");
-    const isLoginOrRegister =
-      endpoint.includes("/login") || endpoint.includes("/register");
+    const isAuthEndpoint =
+      endpoint.includes("/login") ||
+      endpoint.includes("/register") ||
+      endpoint.includes("/refresh-token");
 
-    // =========================
-    // HANDLE 401 (ONLY FOR PROTECTED ROUTES)
-    // =========================
-    if (response.status === 401 && !isRefreshEndpoint && !isLoginOrRegister) {
-      
-      // If already refreshing → queue request
+    /* ================= 401 HANDLING ================= */
+    if (response.status === 401 && !isAuthEndpoint) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -57,7 +55,7 @@ const apiCall = async (endpoint, options = {}) => {
       isRefreshing = true;
 
       try {
-        const refreshResponse = await fetch(
+        const refreshRes = await fetch(
           `${API_BASE_URL}/users/refresh-token`,
           {
             method: "POST",
@@ -65,38 +63,46 @@ const apiCall = async (endpoint, options = {}) => {
           }
         );
 
-        if (!refreshResponse.ok) {
-          throw new Error("Refresh token invalid");
+        if (!refreshRes.ok) {
+          throw new Error("Refresh failed");
         }
 
         processQueue(null);
         isRefreshing = false;
 
-        // retry original request
         return apiCall(endpoint, options);
-      } catch (error) {
-        processQueue(error);
+      } catch (err) {
+        processQueue(err);
         isRefreshing = false;
 
-        // IMPORTANT: user is effectively logged out
         return { error: "SESSION_EXPIRED" };
       }
     }
 
     const data = await safeJson(response);
 
+    /* ================= ERROR RESPONSE ================= */
     if (!response.ok) {
       return {
+        success: false,
         error: data?.message || "REQUEST_FAILED",
         status: response.status,
       };
     }
 
-    return data;
+    /* ================= NORMALIZE RESPONSE =================
+       ALWAYS RETURN:
+       { success, data }
+    ===================================================== */
+    return {
+      success: true,
+      data: data?.data ?? data,
+    };
   } catch (error) {
     console.error("API Error:", error);
 
     return {
+      success: false,
       error: "NETWORK_ERROR",
     };
   }
