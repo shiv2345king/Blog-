@@ -19,14 +19,13 @@ function Login() {
     try {
       const res = await userService.login(data)
 
-      if (res) {
-        localStorage.setItem("accessToken", res.accessToken)
+      const user = res?.data?.user
 
-        dispatch(userLogin({
-          user: res.user
-        }))
-
+      if (user) {
+        dispatch(userLogin({ user }))
         navigate("/")
+      } else {
+        setError("Invalid response from server")
       }
 
     } catch (error) {
@@ -39,12 +38,9 @@ function Login() {
       className="flex items-center justify-center min-h-screen w-full bg-cover bg-center relative"
       style={{ backgroundImage: `url(${bg})` }}
     >
-      {/* Overlay */}
       <div className="absolute inset-0 bg-black/50"></div>
 
-      {/* Content */}
       <div className="relative w-full flex justify-center px-4">
-
         <div className="w-full max-w-lg bg-gray-100 rounded-xl p-10 border border-black/10">
 
           <h2 className="text-center text-2xl font-bold">Sign in</h2>
@@ -68,11 +64,6 @@ function Login() {
                 type="email"
                 {...register("email", {
                   required: "Email is required",
-                  validate: {
-                    matchPattern: (value) =>
-                      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value)
-                      || "Invalid email"
-                  }
                 })}
               />
 

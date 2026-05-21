@@ -27,20 +27,29 @@ function SignUp() {
         formData.append("avatar", data.avatar[0]);
       }
 
-      await userService.register(formData);
+      const registerRes = await userService.register(formData);
 
+      const userAfterRegister = registerRes?.data?.user;
+
+      if (!userAfterRegister) {
+        setError("Registration failed");
+        return;
+      }
+
+      // auto-login after register
       const loginRes = await userService.login({
         email: data.email,
         password: data.password,
       });
 
-      localStorage.setItem("accessToken", loginRes.accessToken);
+      const user = loginRes?.data?.user;
 
-      dispatch(userLogin({
-        user: loginRes.user
-      }));
-
-      navigate("/");
+      if (user) {
+        dispatch(userLogin({ user }))
+        navigate("/")
+      } else {
+        setError("Login after signup failed")
+      }
 
     } catch (error) {
       setError(error.message || "Something went wrong");
@@ -52,10 +61,8 @@ function SignUp() {
       className="flex items-center justify-center min-h-screen w-full bg-cover bg-center relative"
       style={{ backgroundImage: `url(${bg})` }}
     >
-      {/* Overlay */}
       <div className="absolute inset-0 bg-black/50"></div>
 
-      {/* Content */}
       <div className="relative w-full flex justify-center px-4">
 
         <div className="w-full max-w-lg bg-gray-100 rounded-xl p-10 border border-black/10">
@@ -79,38 +86,30 @@ function SignUp() {
             <div className="space-y-5">
 
               <Input
-                label="Full Name:"
-                {...register("fullName", { required: "Full name required" })}
+                label="Full Name"
+                {...register("fullName", { required: true })}
               />
 
               <Input
-                label="Username:"
-                {...register("username", { required: "Username required" })}
+                label="Username"
+                {...register("username", { required: true })}
               />
 
               <Input
-                label="Email:"
+                label="Email"
                 type="email"
-                {...register("email", {
-                  required: "Email required",
-                  validate: {
-                    matchPattern: (value) =>
-                      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value) ||
-                      "Invalid email",
-                  },
-                })}
+                {...register("email", { required: true })}
               />
 
               <Input
-                label="Password:"
+                label="Password"
                 type="password"
-                {...register("password", { required: "Password required" })}
+                {...register("password", { required: true })}
               />
 
               <Input
-                label="Avatar (optional):"
+                label="Avatar (optional)"
                 type="file"
-                accept="image/png, image/jpeg"
                 {...register("avatar")}
               />
 
