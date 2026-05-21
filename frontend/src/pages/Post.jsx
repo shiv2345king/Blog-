@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button, Input, RTE, Select } from "..";
-import { blogService } from "../../api/services/blogService";
-import { aiService } from "../../api/services/aiService";
+import { blogService } from "../api/services/blogService.js";
+import { aiService } from "../api/services/aiService.js";
 import { useNavigate } from "react-router-dom";
 
 export default function PostForm({ post }) {

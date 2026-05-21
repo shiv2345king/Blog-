@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { blogService } from "../api/services/blogService";
+import { blogService } from "../api/services/blogService.js";
 import { Container, PostCard } from "../components";
 
 function Home() {
