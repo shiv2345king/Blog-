@@ -5,11 +5,11 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 
-/* ================= COOKIE OPTIONS (PRODUCTION SAFE) ================= */
+/* ================= COOKIE OPTIONS ================= */
 const cookieOptions = {
   httpOnly: true,
-  secure: true,        // REQUIRED for HTTPS (Render/Vercel)
-  sameSite: "none",    // REQUIRED for cross-site cookies
+  secure: true,       // required in production (HTTPS)
+  sameSite: "none",   // required for cross-site (Vercel ↔ Render)
   path: "/",
 };
 
@@ -44,7 +44,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, username, password } = req.body;
 
   if ([fullName, email, username, password].some((f) => !f?.trim())) {
-    throw new ApiErrors(400, "All fields required");
+    throw new ApiErrors(400, "All fields are required");
   }
 
   const existedUser = await User.findOne({
@@ -58,7 +58,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
 
   if (!avatarLocalPath) {
-    throw new ApiErrors(400, "Avatar required");
+    throw new ApiErrors(400, "Avatar is required");
   }
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
@@ -86,13 +86,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .status(201)
     .cookie("accessToken", accessToken, cookieOptions)
     .cookie("refreshToken", refreshToken, cookieOptions)
-    .json(
-      new ApiResponse(
-        201,
-        { user: createdUser },
-        "User registered successfully"
-      )
-    );
+    .json(new ApiResponse(201, { user: createdUser }, "User registered"));
 });
 
 /* ================= LOGIN ================= */
@@ -109,13 +103,6 @@ const loginUser = asyncHandler(async (req, res) => {
 
   if (!user) {
     throw new ApiErrors(404, "User not found");
-  }
-
-  if (user.authProvider !== "local") {
-    throw new ApiErrors(
-      400,
-      `This account uses ${user.authProvider} login. Please use social login.`
-    );
   }
 
   const isValid = await user.isPasswordCorrect(password);
@@ -135,17 +122,15 @@ const loginUser = asyncHandler(async (req, res) => {
     .status(200)
     .cookie("accessToken", accessToken, cookieOptions)
     .cookie("refreshToken", refreshToken, cookieOptions)
-    .json(
-      new ApiResponse(
-        200,
-        { user: loggedInUser },
-        "Login successful"
-      )
-    );
+    .json(new ApiResponse(200, { user: loggedInUser }, "Login successful"));
 });
 
 /* ================= LOGOUT ================= */
 const logoutUser = asyncHandler(async (req, res) => {
+  if (!req.user?._id) {
+    throw new ApiErrors(401, "Unauthorized");
+  }
+
   await User.findByIdAndUpdate(req.user._id, {
     $unset: { refreshToken: 1 },
   });
@@ -154,12 +139,13 @@ const logoutUser = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("accessToken", cookieOptions)
     .clearCookie("refreshToken", cookieOptions)
-    .json(new ApiResponse(200, {}, "Logged out"));
+    .json(new ApiResponse(200, {}, "Logged out successfully"));
 });
 
-/* ================= REFRESH TOKEN ================= */
+/* ================= REFRESH TOKEN (FIXED) ================= */
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken = req.body?.refreshToken;
+  const incomingRefreshToken =
+    req.cookies?.refreshToken || req.body?.refreshToken;
 
   if (!incomingRefreshToken) {
     throw new ApiErrors(401, "Refresh token required");
@@ -201,26 +187,23 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     .status(200)
     .cookie("accessToken", accessToken, cookieOptions)
     .cookie("refreshToken", newRefreshToken, cookieOptions)
-    .json(
-      new ApiResponse(
-        200,
-        {},
-        "Token refreshed successfully"
-      )
-    );
+    .json(new ApiResponse(200, {}, "Token refreshed"));
 });
 
-/* ================= OTHER FUNCTIONS (UNCHANGED LOGIC) ================= */
-
+/* ================= CHANGE PASSWORD ================= */
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
   const user = await User.findById(req.user._id);
 
+  if (!user) {
+    throw new ApiErrors(404, "User not found");
+  }
+
   const isValid = await user.isPasswordCorrect(oldPassword);
 
   if (!isValid) {
-    throw new ApiErrors(400, "Wrong old password");
+    throw new ApiErrors(400, "Incorrect old password");
   }
 
   user.password = newPassword;
@@ -229,10 +212,12 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
   return res.json(new ApiResponse(200, {}, "Password changed"));
 });
 
+/* ================= GET CURRENT USER ================= */
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res.json(new ApiResponse(200, req.user, "User fetched"));
 });
 
+/* ================= UPDATE DETAILS ================= */
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullName, email } = req.body;
 
@@ -245,8 +230,13 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
   return res.json(new ApiResponse(200, user, "Updated"));
 });
 
+/* ================= UPDATE AVATAR ================= */
 const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocal = req.file?.path;
+
+  if (!avatarLocal) {
+    throw new ApiErrors(400, "Avatar file missing");
+  }
 
   const avatar = await uploadOnCloudinary(avatarLocal);
 
@@ -259,12 +249,14 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   return res.json(new ApiResponse(200, user, "Avatar updated"));
 });
 
+/* ================= DELETE ACCOUNT ================= */
 const deleteUserAccount = asyncHandler(async (req, res) => {
   await User.findByIdAndDelete(req.user._id);
 
   return res.json(new ApiResponse(200, {}, "Account deleted"));
 });
 
+/* ================= USER PROFILE ================= */
 const getUserProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
 

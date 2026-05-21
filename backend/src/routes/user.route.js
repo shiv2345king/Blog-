@@ -17,67 +17,39 @@ import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
-// =========================
-// AUTH
-// =========================
+/* ================= AUTH (PUBLIC) ================= */
+
 router.post(
   "/register",
-  upload.fields([
-    {
-      name: "avatar",
-      maxCount: 1,
-    },
-  ]),
+  upload.fields([{ name: "avatar", maxCount: 1 }]),
   registerUser
 );
 
 router.post("/login", loginUser);
+
+// IMPORTANT: refresh should NOT require auth middleware
 router.post("/refresh-token", refreshAccessToken);
 
-// =========================
-// PROTECTED ROUTES
-// =========================
-router.post(
-  "/logout",
-  verifyJwt,
-  logoutUser
-);
+/* ================= PROTECTED ================= */
 
-router.post(
-  "/change-password",
-  verifyJwt,
-  changeCurrentPassword
-);
+router.use(verifyJwt); // 👈 IMPORTANT: apply AFTER public routes
 
-router.get(
-  "/me",
-  verifyJwt,
-  getCurrentUser
-);
+router.post("/logout", logoutUser);
 
-router.put(
-  "/update",
-  verifyJwt,
-  updateAccountDetails
-);
+router.post("/change-password", changeCurrentPassword);
+
+router.get("/me", getCurrentUser);
+
+router.put("/update", updateAccountDetails);
 
 router.put(
   "/avatar",
-  verifyJwt,
   upload.single("avatar"),
   updateUserAvatar
 );
 
-router.delete(
-  "/delete",
-  verifyJwt,
-  deleteUserAccount
-);
+router.delete("/delete", deleteUserAccount);
 
-router.get(
-  "/:username/profile",
-  verifyJwt,
-  getUserProfile
-);
+router.get("/:username/profile", getUserProfile);
 
 export default router;
