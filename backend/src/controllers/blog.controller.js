@@ -52,15 +52,29 @@ export const getAllBlogs = asyncHandler(async (req, res) => {
     const blogs = await Blog.find()
         .populate("owner", "username email");
 
-    const likes = await Like.find(userId ? { user: userId } : {});
+    // Get all likes for all blogs
+    const allLikes = await Like.find({});
 
-    const likedBlogIds = new Set(
-        likes.map(l => l.blog.toString())
-    );
+    // Build like count map
+    const likeCountMap = {};
+    const likedByUserSet = new Set();
+
+    allLikes.forEach(like => {
+        const blogId = like.blog.toString();
+
+        // count
+        likeCountMap[blogId] = (likeCountMap[blogId] || 0) + 1;
+
+        // user-specific
+        if (userId && like.user.toString() === userId.toString()) {
+            likedByUserSet.add(blogId);
+        }
+    });
 
     const enrichedBlogs = blogs.map(blog => ({
         ...blog.toObject(),
-        isLikedByMe: likedBlogIds.has(blog._id.toString()),
+        likeCount: likeCountMap[blog._id.toString()] || 0,
+        isLikedByMe: likedByUserSet.has(blog._id.toString()),
     }));
 
     return res.status(200).json({
