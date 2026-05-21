@@ -68,7 +68,28 @@ export const blogService = {
     const res = await apiCall("/blogs/my", {
       credentials: "include",
     });
-
     return res?.data ?? res ?? [];
   },
+
+  /* ================= UPDATE BLOG ================= */
+  updateBlog: async (id, payload) => {
+  if (!id) throw new Error("Blog id required");
+
+  const formData = new FormData();
+
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      formData.append(key, value);
+    }
+  });
+
+  const res = await apiCall(`/blogs/${id}`, {
+    method: "PUT",
+    body: formData,
+  });
+
+  return res?.data ?? res;
+},
+
+    
 };
