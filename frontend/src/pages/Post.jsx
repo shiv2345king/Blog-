@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Button, Input, RTE, Select } from "..";
+import { Button, Input, RTE, Select } from "../components/index.js";
 import { blogService } from "../api/services/blogService.js";
 import { aiService } from "../api/services/aiService.js";
 import { useNavigate } from "react-router-dom";
