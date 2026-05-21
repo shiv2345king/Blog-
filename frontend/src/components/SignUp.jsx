@@ -27,32 +27,41 @@ function SignUp() {
         formData.append("avatar", data.avatar[0]);
       }
 
+      // ---------- REGISTER ----------
       const registerRes = await userService.register(formData);
 
-      const userAfterRegister = registerRes?.data?.user;
+      const registeredUser =
+        registerRes?.data?.user ||
+        registerRes?.user ||
+        registerRes?.data?.data?.user;
 
-      if (!userAfterRegister) {
+      if (!registeredUser) {
         setError("Registration failed");
         return;
       }
 
-      // auto-login after register
+      // ---------- LOGIN ----------
       const loginRes = await userService.login({
         email: data.email,
         password: data.password,
       });
 
-      const user = loginRes?.data?.user;
+      const loggedInUser =
+        loginRes?.data?.user ||
+        loginRes?.user ||
+        loginRes?.data?.data?.user;
 
-      if (user) {
-        dispatch(userLogin({ user }))
-        navigate("/")
-      } else {
-        setError("Login after signup failed")
+      if (!loggedInUser) {
+        setError("Login after signup failed");
+        return;
       }
 
-    } catch (error) {
-      setError(error.message || "Something went wrong");
+      dispatch(userLogin({ user: loggedInUser }));
+      navigate("/");
+
+    } catch (err) {
+      console.error(err);
+      setError(err?.message || "Something went wrong");
     }
   };
 
@@ -64,7 +73,6 @@ function SignUp() {
       <div className="absolute inset-0 bg-black/50"></div>
 
       <div className="relative w-full flex justify-center px-4">
-
         <div className="w-full max-w-lg bg-gray-100 rounded-xl p-10 border border-black/10">
 
           <h2 className="text-center text-2xl font-bold">
@@ -85,33 +93,11 @@ function SignUp() {
           <form onSubmit={handleSubmit(signUp)} className="mt-8">
             <div className="space-y-5">
 
-              <Input
-                label="Full Name"
-                {...register("fullName", { required: true })}
-              />
-
-              <Input
-                label="Username"
-                {...register("username", { required: true })}
-              />
-
-              <Input
-                label="Email"
-                type="email"
-                {...register("email", { required: true })}
-              />
-
-              <Input
-                label="Password"
-                type="password"
-                {...register("password", { required: true })}
-              />
-
-              <Input
-                label="Avatar (optional)"
-                type="file"
-                {...register("avatar")}
-              />
+              <Input label="Full Name" {...register("fullName", { required: true })} />
+              <Input label="Username" {...register("username", { required: true })} />
+              <Input label="Email" type="email" {...register("email", { required: true })} />
+              <Input label="Password" type="password" {...register("password", { required: true })} />
+              <Input label="Avatar (optional)" type="file" {...register("avatar")} />
 
               <Button type="submit" className="w-full">
                 Create Account

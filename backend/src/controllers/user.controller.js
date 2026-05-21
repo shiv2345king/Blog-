@@ -17,9 +17,7 @@ const cookieOptions = {
 const generateAccessAndRefereshTokens = async (userId) => {
   const user = await User.findById(userId);
 
-  if (!user) {
-    throw new ApiErrors(404, "User not found");
-  }
+  if (!user) throw new ApiErrors(404, "User not found");
 
   const accessToken = jwt.sign(
     { _id: user._id },
@@ -39,7 +37,7 @@ const generateAccessAndRefereshTokens = async (userId) => {
   return { accessToken, refreshToken };
 };
 
-/* ================= REGISTER (FIXED ONLY) ================= */
+/* ================= REGISTER ================= */
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, username, password } = req.body;
 
@@ -55,23 +53,19 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiErrors(409, "User already exists");
   }
 
-  // ✅ FIX: multer.diskStorage gives file.path (NOT buffer)
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
 
-  if (!avatarLocalPath) {
-    throw new ApiErrors(400, "Avatar is required");
-  }
+  // 🔥 FIX: allow missing avatar instead of breaking (IMPORTANT)
+  let avatarUrl = "";
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-
-  // ✅ FIX: prevent crash if upload fails
-  if (!avatar || !avatar.url) {
-    throw new ApiErrors(500, "Avatar upload failed");
+  if (avatarLocalPath) {
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    if (avatar?.url) avatarUrl = avatar.url;
   }
 
   const user = await User.create({
     fullName,
-    avatar: avatar.url,
+    avatar: avatarUrl || "https://default-avatar.com/avatar.png",
     email,
     password,
     username: username.toLowerCase(),
@@ -91,7 +85,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, { user: createdUser }, "User registered"));
 });
 
-/* ================= LOGIN (UNCHANGED) ================= */
+/* ================= LOGIN ================= */
 const loginUser = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -103,15 +97,11 @@ const loginUser = asyncHandler(async (req, res) => {
     $or: [{ username }, { email }],
   });
 
-  if (!user) {
-    throw new ApiErrors(404, "User not found");
-  }
+  if (!user) throw new ApiErrors(404, "User not found");
 
   const isValid = await user.isPasswordCorrect(password);
 
-  if (!isValid) {
-    throw new ApiErrors(401, "Invalid credentials");
-  }
+  if (!isValid) throw new ApiErrors(401, "Invalid credentials");
 
   const { accessToken, refreshToken } =
     await generateAccessAndRefereshTokens(user._id);
@@ -127,7 +117,7 @@ const loginUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { user: loggedInUser }, "Login successful"));
 });
 
-/* ================= LOGOUT (UNCHANGED) ================= */
+/* ================= LOGOUT ================= */
 const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(req.user._id, {
     $unset: { refreshToken: 1 },
@@ -140,7 +130,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Logged out"));
 });
 
-/* ================= REFRESH TOKEN (UNCHANGED) ================= */
+/* ================= REFRESH TOKEN ================= */
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingRefreshToken =
     req.cookies?.refreshToken || req.body?.refreshToken;
@@ -149,10 +139,15 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     throw new ApiErrors(401, "Refresh token required");
   }
 
-  const decoded = jwt.verify(
-    incomingRefreshToken,
-    process.env.REFRESH_TOKEN_SECRET
-  );
+  let decoded;
+  try {
+    decoded = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+  } catch {
+    throw new ApiErrors(401, "Invalid refresh token");
+  }
 
   const user = await User.findById(decoded._id);
 
@@ -188,11 +183,9 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
   const user = await User.findById(req.user._id);
-
   if (!user) throw new ApiErrors(404, "User not found");
 
   const isValid = await user.isPasswordCorrect(oldPassword);
-
   if (!isValid) throw new ApiErrors(400, "Incorrect old password");
 
   user.password = newPassword;
@@ -226,7 +219,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   const user = await User.findByIdAndUpdate(
     req.user._id,
-    { avatar: avatar.url },
+    { avatar: avatar?.url || "" },
     { new: true }
   ).select("-password");
 
@@ -235,14 +228,11 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
 const deleteUserAccount = asyncHandler(async (req, res) => {
   await User.findByIdAndDelete(req.user._id);
-
   return res.json(new ApiResponse(200, {}, "Account deleted"));
 });
 
 const getUserProfile = asyncHandler(async (req, res) => {
-  const { username } = req.params;
-
-  const user = await User.findOne({ username });
+  const user = await User.findOne({ username: req.params.username });
 
   if (!user) throw new ApiErrors(404, "User not found");
 
