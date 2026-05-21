@@ -13,7 +13,7 @@ import Home from "./pages/Home.jsx";
 import Login from "./components/Login.jsx";
 import SignUp from "./components/SignUp.jsx";
 import Post from "./pages/Post.jsx";
-import MyPosts from "./pages/MyPost.jsx";
+import MyPosts from "./pages/MyPosts.jsx";
 import UpdatePost from "./pages/UpdatePost.jsx";
 import AddPost from "./pages/AddPost.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
