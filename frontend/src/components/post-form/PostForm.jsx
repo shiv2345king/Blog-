@@ -15,43 +15,41 @@ export default function PostForm({ post }) {
   });
 
   const navigate = useNavigate();
+
   const [aiFeedback, setAiFeedback] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
 
   // ================= AI REVIEW =================
-  const reviewContent = async (content) => {
+  const handleAiReview = async () => {
     try {
       setAiLoading(true);
 
-      const response = await aiService.reviewBlog({ content });
-      const feedback = response?.data ?? response;
+      const content = getValues("content");
 
-      setAiFeedback(feedback);
-      return feedback;
+      const plainText =
+        typeof content === "string"
+          ? content
+          : content?.blocks
+          ? content.blocks.map((b) => b.text || "").join("\n")
+          : "";
+
+      const cleaned = plainText.replace(/<[^>]*>/g, "").trim();
+
+      if (!cleaned) {
+        alert("Write content first");
+        return;
+      }
+
+      // ✅ FIX: aiService already returns data (after previous fix)
+      const result = await aiService.reviewBlog(cleaned);
+
+      setAiFeedback(result);
     } catch (error) {
       console.error("AI Review Error:", error);
       setAiFeedback(null);
-      return null;
     } finally {
       setAiLoading(false);
     }
-  };
-
-  const handleAiReview = async () => {
-    const content = getValues("content");
-
-    const plainText =
-      typeof content === "string"
-        ? content
-        : content?.blocks
-        ? content.blocks.map((b) => b.text || "").join("\n")
-        : String(content || "");
-
-    const cleaned = plainText.replace(/<[^>]*>/g, "").trim();
-
-    if (!cleaned) return alert("Write content first");
-
-    await reviewContent(cleaned);
   };
 
   // ================= SUBMIT =================
@@ -89,32 +87,24 @@ export default function PostForm({ post }) {
       className="w-full max-w-6xl mx-auto flex flex-col gap-8 p-6 font-semibold text-gray-900"
     >
       {/* TITLE */}
-      <Input
-        label="Title"
-        {...register("title", { required: true })}
-      />
+      <Input label="Title" {...register("title", { required: true })} />
 
-      {/* CONTENT EDITOR */}
+      {/* CONTENT */}
       <div className="w-full font-medium text-gray-900">
         <RTE label="Content" name="content" control={control} />
       </div>
 
-      {/* AI REVIEW */}
+      {/* AI BUTTON */}
       <Button
         type="button"
         onClick={handleAiReview}
         bgColor="bg-purple-600"
-        className="font-semibold tracking-wide"
       >
         AI Review
       </Button>
 
       {/* IMAGE */}
-      <Input
-        type="file"
-        accept="image/*"
-        {...register("image")}
-      />
+      <Input type="file" accept="image/*" {...register("image")} />
 
       {/* EXISTING IMAGE */}
       {post?.image && (
@@ -125,30 +115,24 @@ export default function PostForm({ post }) {
       )}
 
       {/* STATUS */}
-      <Select
-        options={["active", "inactive"]}
-        {...register("status")}
-      />
+      <Select options={["active", "inactive"]} {...register("status")} />
 
       {/* SUBMIT */}
       <Button
         type="submit"
         bgColor={post ? "bg-green-500" : "bg-blue-500"}
-        className="font-semibold tracking-wide"
       >
         {post ? "Update Post" : "Publish"}
       </Button>
 
-      {/* AI STATUS */}
+      {/* AI LOADING */}
       {aiLoading && (
-        <p className="text-sm text-gray-500 font-medium">
-          AI analyzing...
-        </p>
+        <p className="text-sm text-gray-500">AI analyzing...</p>
       )}
 
-      {/* AI FEEDBACK (optional debug) */}
+      {/* AI RESPONSE */}
       {aiFeedback && (
-        <pre className="text-xs bg-gray-100 p-3 rounded-md overflow-auto font-medium">
+        <pre className="text-xs bg-gray-100 p-3 rounded-md overflow-auto">
           {JSON.stringify(aiFeedback, null, 2)}
         </pre>
       )}
