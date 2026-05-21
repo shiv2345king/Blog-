@@ -26,6 +26,8 @@ app.use(cookieParser());
 const allowedOrigins = [
   "http://localhost:5173",
   "https://blog-git-main-shivam-guptas-projects-cd5190e3.vercel.app",
+    "https://blog-anhqu613z-shivam-guptas-projects-cd5190e3.vercel.app",
+
 ];
 
 app.use(
