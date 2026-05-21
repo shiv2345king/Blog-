@@ -96,13 +96,12 @@ export const getMyBlogs = asyncHandler(async (req, res) => {
     "owner",
     "username email"
   );
-
+ console.log("USER IN MYBLOGS:", req.user);
   return res.status(200).json({
     success: true,
     data: blogs,
   });
 });
-
 /* ================= UPDATE BLOG ================= */
 export const updateBlog = asyncHandler(async (req, res) => {
   const { title, content } = req.body;

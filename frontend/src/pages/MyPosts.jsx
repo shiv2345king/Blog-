@@ -9,16 +9,20 @@ function MyPosts() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await blogService.getMyBlogs();
+        setLoading(true);
 
-        console.log("MY POSTS:", data);
+        const res = await blogService.getMyBlogs();
 
-        setPosts(Array.isArray(data) ? data : []);
+        console.log("RAW MY POSTS:", res);
+
+        const blogs = res?.data ?? res ?? [];
+
+        setPosts(Array.isArray(blogs) ? blogs : []);
       } catch (err) {
         console.error("MyPosts error:", err);
         setPosts([]);
       } finally {
-        setLoading(false);
+        setLoading(false); // 🔥 IMPORTANT FIX
       }
     };
 

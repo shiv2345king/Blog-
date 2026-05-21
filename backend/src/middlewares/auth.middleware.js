@@ -1,5 +1,6 @@
-import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
+import User from "../models/user.model.js";
+import { ApiErrors } from "../utils/ApiErrors.js";
 
 export const verifyJwt = async (req, res, next) => {
   try {
@@ -8,39 +9,21 @@ export const verifyJwt = async (req, res, next) => {
       req.header("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized Access: No token provided",
-      });
+      throw new ApiErrors(401, "Unauthorized");
     }
 
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-    } catch (err) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid or expired token",
-      });
-    }
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    const user = await User.findById(decoded?._id).select(
-      "-password -refreshToken"
-    );
+    const user = await User.findById(decoded._id).select("-password");
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      throw new ApiErrors(401, "Invalid user");
     }
 
-    req.user = user;
+    req.user = user; // 🔥 THIS IS CRITICAL
+
     next();
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Authentication middleware failure",
-    });
+  } catch (err) {
+    throw new ApiErrors(401, err?.message || "Invalid token");
   }
 };

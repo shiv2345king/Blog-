@@ -5,7 +5,7 @@ import { blogService } from "../../api/services/blogService";
 import { useNavigate } from "react-router-dom";
 
 export default function PostForm({ post }) {
-  const { register, handleSubmit, control, setValue } = useForm({
+  const { register, handleSubmit, control } = useForm({
     defaultValues: {
       title: post?.title || "",
       content: post?.content || "",
@@ -20,7 +20,7 @@ export default function PostForm({ post }) {
       const payload = {
         title: data.title,
         content: data.content,
-        image: data.image?.[0],
+        image: data.image?.[0], // file
         status: data.status,
       };
 
@@ -38,24 +38,23 @@ export default function PostForm({ post }) {
 
       navigate(`/posts/${saved._id}`);
     } catch (err) {
-      console.error(err);
+      console.error("POST SAVE ERROR:", err);
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
+      {/* TITLE */}
       <Input label="Title" {...register("title")} />
 
+      {/* CONTENT */}
       <RTE control={control} name="content" />
 
-      {/* 🔥 FIXED FILE INPUT */}
-      <input
-        type="file"
-        accept="image/*"
-        {...register("image")}
-      />
+      {/* IMAGE INPUT (IMPORTANT FIX) */}
+      <Input type="file" accept="image/*" {...register("image")} />
 
+      {/* EXISTING IMAGE PREVIEW */}
       {post?.image && (
         <img
           src={post.image}
@@ -64,10 +63,8 @@ export default function PostForm({ post }) {
         />
       )}
 
-      <Select
-        options={["active", "inactive"]}
-        {...register("status")}
-      />
+      {/* STATUS */}
+      <Select options={["active", "inactive"]} {...register("status")} />
 
       <Button type="submit">
         {post ? "Update" : "Publish"}
