@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router } from "express";
 import {
   likeBlog,
   unlikeBlog,
@@ -9,41 +9,31 @@ import {
   unlikeComment,
   getLikeCountForComment,
   getLikedCommentsForUser
-} from '../controllers/like.controller.js';
-import { verifyJwt } from '../middlewares/auth.middleware.js';
+} from "../controllers/like.controller.js";
+
+import { verifyJwt } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
+/* ================= ALL LIKE ROUTES ARE PROTECTED ================= */
+
 router.use(verifyJwt);
 
-// Blog like/unlike (same endpoint, different methods)
-router.route("/blog/:id")
-  .post(likeBlog)
-  .delete(unlikeBlog);
+/* BLOG LIKES */
 
-// Get likes for a blog
-router.route("/blog/:id/likes")
-  .get(getLikesForBlog);
+router.post("/blog/:id", likeBlog);
+router.delete("/blog/:id", unlikeBlog);
 
-// Get liked blogs for current user
-router.route("/blog/liked")
-  .get(getLikedBlogsForUser);
+router.get("/blog/:id/likes", getLikesForBlog);
+router.get("/blog/liked", getLikedBlogsForUser);
+router.get("/blog/:id/count", getLikeCountForBlog);
 
-// Get like count for a blog
-router.route("/blog/:id/count")
-  .get(getLikeCountForBlog);
+/* COMMENT LIKES */
 
-// Comment like/unlike
-router.route("/comment/:id")
-  .post(likeComment)
-  .delete(unlikeComment);
+router.post("/comment/:id", likeComment);
+router.delete("/comment/:id", unlikeComment);
 
-// Get liked comments for current user
-router.route("/comment/:id/likes")
-  .get(getLikedCommentsForUser);
-
-// Get like count for a comment
-router.route("/comment/:id/count")
-  .get(getLikeCountForComment);
+router.get("/comment/:id/likes", getLikedCommentsForUser);
+router.get("/comment/:id/count", getLikeCountForComment);
 
 export default router;

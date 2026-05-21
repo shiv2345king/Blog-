@@ -17,7 +17,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
-/* ================= AUTH (PUBLIC) ================= */
+/* ================= PUBLIC ROUTES ================= */
 
 router.post(
   "/register",
@@ -26,18 +26,14 @@ router.post(
 );
 
 router.post("/login", loginUser);
-
-// IMPORTANT: refresh should NOT require auth middleware
 router.post("/refresh-token", refreshAccessToken);
 
-/* ================= PROTECTED ================= */
+/* ================= PROTECTED ROUTES ================= */
 
-router.use(verifyJwt); // 👈 IMPORTANT: apply AFTER public routes
+router.use(verifyJwt);
 
 router.post("/logout", logoutUser);
-
 router.post("/change-password", changeCurrentPassword);
-
 router.get("/me", getCurrentUser);
 
 router.put("/update", updateAccountDetails);
@@ -49,7 +45,6 @@ router.put(
 );
 
 router.delete("/delete", deleteUserAccount);
-
 router.get("/:username/profile", getUserProfile);
 
 export default router;

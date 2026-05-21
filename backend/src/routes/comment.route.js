@@ -1,26 +1,25 @@
 import { Router } from "express";
-import { 
-  addComment, 
-  deleteComment, 
+import {
+  addComment,
+  deleteComment,
   getCommentsForBlog,
   updateComment,
   getCommentById
 } from "../controllers/comment.controller.js";
+
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-// ✅ REMOVE: router.use(verifyJwt);
+/* ================= PUBLIC ROUTES ================= */
 
-// Blog comments routes
-router.route("/blog/:id")
-  .get(getCommentsForBlog)           // ✅ PUBLIC - no auth needed
-  .post(verifyJwt, addComment);       // ✅ PROTECTED - auth required
+router.get("/blog/:id", getCommentsForBlog);
+router.get("/:commentId", getCommentById);
 
-// Individual comment routes  
-router.route("/:commentId")
-  .get(getCommentById)                // ✅ PUBLIC - no auth needed
-  .put(verifyJwt, updateComment)      // ✅ PROTECTED - auth required
-  .delete(verifyJwt, deleteComment);  // ✅ PROTECTED - auth required
+/* ================= PROTECTED ROUTES ================= */
+
+router.post("/blog/:id", verifyJwt, addComment);
+router.put("/:commentId", verifyJwt, updateComment);
+router.delete("/:commentId", verifyJwt, deleteComment);
 
 export default router;

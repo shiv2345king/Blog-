@@ -15,42 +15,31 @@ import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
-/* =========================
-   PUBLIC ROUTES (NO LOGIN)
-========================= */
+/* ================= PUBLIC ROUTES ================= */
 
-// Get all blogs (PUBLIC)
-router.route("/").get(getAllBlogs);
+router.get("/", getAllBlogs);
+router.get("/:id", getBlogById);
+router.get("/:id/stats", getBlogStats);
+router.get("/:id/feedback", getBlogFeedback);
 
-// Get single blog (PUBLIC)
-router.route("/:id").get(getBlogById);
+/* ================= PROTECTED ROUTES ================= */
 
-// Blog stats (optional public)
-router.route("/:id/stats").get(getBlogStats);
-
-// Feedback (optional public)
-router.route("/:id/feedback").get(getBlogFeedback);
-
-/* =========================
-   PROTECTED ROUTES (LOGIN REQUIRED)
-========================= */
-
-// Apply auth ONLY BELOW THIS LINE
 router.use(verifyJwt);
 
-// Create blog
-router.route("/").post(
+router.post(
+  "/",
   upload.fields([{ name: "image", maxCount: 1 }]),
   createBlog
 );
 
-// Liked blogs
-router.route("/liked").get(getLikedBlogs);
+router.get("/liked", getLikedBlogs);
 
-// Update + Delete blog
-router
-  .route("/:id")
-  .put(upload.single("image"), updateBlog)
-  .delete(deleteBlog);
+router.put(
+  "/:id",
+  upload.single("image"),
+  updateBlog
+);
+
+router.delete("/:id", deleteBlog);
 
 export default router;
