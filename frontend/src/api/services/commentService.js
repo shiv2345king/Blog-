@@ -1,19 +1,25 @@
 import apiCall from "../apiConfig";
 
+const unwrap = (res) => {
+  return res?.data ?? res ?? null;
+};
+
 export const commentService = {
-  // =========================
-  // GET COMMENTS
-  // =========================
+  /* ================= GET COMMENTS ================= */
   getComments: async (blogId) => {
+    if (!blogId) throw new Error("blogId required");
+
     const res = await apiCall(`/comments/blog/${blogId}`);
 
-    return res?.data || [];
+    const data = unwrap(res);
+
+    return Array.isArray(data) ? data : [];
   },
 
-  // =========================
-  // ADD COMMENT
-  // =========================
+  /* ================= ADD COMMENT ================= */
   addComment: async (blogId, content) => {
+    if (!blogId || !content) return null;
+
     const res = await apiCall(`/comments/blog/${blogId}`, {
       method: "POST",
       body: JSON.stringify({ content }),
@@ -22,13 +28,13 @@ export const commentService = {
       },
     });
 
-    return res?.data || null;
+    return unwrap(res);
   },
 
-  // =========================
-  // UPDATE COMMENT
-  // =========================
+  /* ================= UPDATE COMMENT ================= */
   updateComment: async (commentId, content) => {
+    if (!commentId || !content) return null;
+
     const res = await apiCall(`/comments/${commentId}`, {
       method: "PUT",
       body: JSON.stringify({ content }),
@@ -37,17 +43,17 @@ export const commentService = {
       },
     });
 
-    return res?.data || null;
+    return unwrap(res);
   },
 
-  // =========================
-  // DELETE COMMENT
-  // =========================
+  /* ================= DELETE COMMENT ================= */
   deleteComment: async (commentId) => {
+    if (!commentId) return null;
+
     const res = await apiCall(`/comments/${commentId}`, {
       method: "DELETE",
     });
 
-    return res?.data || null;
+    return unwrap(res);
   },
 };

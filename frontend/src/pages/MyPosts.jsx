@@ -13,7 +13,7 @@ function MyPosts() {
 
         const res = await blogService.getMyBlogs();
 
-        // FIX: backend ApiResponse => { success, data }
+        // IMPORTANT FIX: backend returns { success, data }
         const blogs = res?.data ?? res ?? [];
 
         setPosts(Array.isArray(blogs) ? blogs : []);
@@ -34,17 +34,19 @@ function MyPosts() {
 
   return (
     <Container>
-      {posts.length === 0 ? (
-        <p className="text-center text-gray-500">
-          No posts created by you
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post) => (
-            <PostCard key={post._id} post={post} />
-          ))}
-        </div>
-      )}
+      <div className="w-full py-6">
+        {posts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {posts.map((post) => (
+              <PostCard key={post._id} post={post} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-gray-500">
+            No posts created by you
+          </p>
+        )}
+      </div>
     </Container>
   );
 }

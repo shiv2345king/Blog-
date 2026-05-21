@@ -35,23 +35,22 @@ export const blogService = {
   },
 
   /* ================= UPDATE BLOG ================= */
-  updateBlog: async (id, payload) => {
-    if (!id) return null;
+ updateBlog: async (id, payload) => {
+  if (!id) return null;
 
-    const formData = new FormData();
+  const formData = new FormData();
 
-    Object.entries(payload).forEach(([key, value]) => {
-      if (value) formData.append(key, value);
-    });
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value) formData.append(key, value);
+  });
 
-    const res = await apiCall(`/blogs/${id}`, {
-      method: "PUT",
-      body: formData,
-    });
+  const res = await apiCall(`/blogs/${id}`, {
+    method: "PUT",
+    body: formData,
+  });
 
-    return unwrap(res);
-  },
-
+  return res?.data ?? res;
+},
   /* ================= DELETE BLOG ================= */
   deleteBlog: async (id) => {
     if (!id) return null;

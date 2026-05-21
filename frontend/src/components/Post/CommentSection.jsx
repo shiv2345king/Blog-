@@ -20,11 +20,13 @@ function CommentSection({ blogId, currentUser }) {
       setLoading(true);
 
       const res = await commentService.getComments(blogId);
+
+      // backend returns ApiResponse { data: [...] }
       const data = res?.data ?? res ?? [];
 
       setComments(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch comments error:", err);
       setComments([]);
     } finally {
       setLoading(false);
@@ -43,7 +45,7 @@ function CommentSection({ blogId, currentUser }) {
 
       const res = await commentService.addComment(
         blogId,
-        newComment
+        newComment.trim()
       );
 
       const comment = res?.data ?? res;
@@ -54,7 +56,7 @@ function CommentSection({ blogId, currentUser }) {
 
       setNewComment("");
     } catch (err) {
-      console.error(err);
+      console.error("Add comment error:", err);
     } finally {
       setSubmitting(false);
     }
@@ -68,7 +70,7 @@ function CommentSection({ blogId, currentUser }) {
       await commentService.deleteComment(id);
       setComments((prev) => prev.filter((c) => c._id !== id));
     } catch (err) {
-      console.error(err);
+      console.error("Delete comment error:", err);
     }
   };
 
@@ -77,13 +79,20 @@ function CommentSection({ blogId, currentUser }) {
     if (!editContent.trim()) return;
 
     try {
-      const res = await commentService.updateComment(id, editContent);
+      const res = await commentService.updateComment(
+        id,
+        editContent.trim()
+      );
+
       const updated = res?.data ?? res;
 
       setComments((prev) =>
         prev.map((c) =>
           c._id === id
-            ? { ...c, content: updated?.content || editContent }
+            ? {
+                ...c,
+                content: updated?.content || editContent,
+              }
             : c
         )
       );
@@ -91,16 +100,21 @@ function CommentSection({ blogId, currentUser }) {
       setEditingId(null);
       setEditContent("");
     } catch (err) {
-      console.error(err);
+      console.error("Update comment error:", err);
     }
   };
 
-  /* ================= FIXED AUTHOR CHECK ================= */
+  /* ================= SAFE USER ID ================= */
   const getUserId = (user) => {
-    return user?._id || user?.user?._id || user;
+    if (!user) return null;
+    return typeof user === "object"
+      ? user._id || user.id
+      : user;
   };
 
-  /* ================= UI ================= */
+  const currentUserId = getUserId(currentUser);
+
+  /* ================= LOADING ================= */
   if (loading) return <div className="p-4">Loading...</div>;
 
   return (
@@ -109,7 +123,7 @@ function CommentSection({ blogId, currentUser }) {
         Comments ({comments.length})
       </h2>
 
-      {/* COMMENT INPUT */}
+      {/* INPUT */}
       {currentUser ? (
         <form onSubmit={handleSubmit} className="mb-6">
           <textarea
@@ -132,8 +146,12 @@ function CommentSection({ blogId, currentUser }) {
 
       {/* COMMENTS */}
       {comments.map((c) => {
+        const commentUserId = getUserId(c.user);
+
         const isAuthor =
-          String(getUserId(currentUser)) === String(getUserId(c.user));
+          currentUserId &&
+          commentUserId &&
+          String(currentUserId) === String(commentUserId);
 
         return (
           <div key={c._id} className="border p-4 mb-3 rounded">
@@ -175,7 +193,7 @@ function CommentSection({ blogId, currentUser }) {
               <>
                 <p className="mt-2">{c.content}</p>
 
-                {/* 🔥 EDIT BUTTON FIXED */}
+                {/* EDIT/DELETE */}
                 {isAuthor && (
                   <div className="flex gap-3 text-sm mt-2">
                     <button
