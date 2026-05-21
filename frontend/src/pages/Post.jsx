@@ -20,50 +20,29 @@ export default function Post() {
 
   const user = useSelector((state) => state.user.user);
 
-  // =========================
-  // CHECK AUTHOR
-  // =========================
+  /* ================= AUTHOR CHECK ================= */
   const isAuthor =
     post && user
-      ? String(post.owner?._id || post.owner) ===
-        String(user?._id || user?.user?._id)
+      ? String(post.owner?._id || post.owner) === String(user?._id)
       : false;
 
-  // =========================
-  // REQUIRE LOGIN
-  // =========================
-  const requireAuth = (callback) => {
+  /* ================= AUTH GUARD ================= */
+  const requireAuth = (cb) => {
     if (!user) {
       navigate("/login");
       return;
     }
-
-    callback();
+    cb();
   };
 
-  // =========================
-  // FETCH POST
-  // =========================
+  /* ================= FETCH POST ================= */
   useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
       try {
-        if (!id) {
-          navigate("/");
-          return;
-        }
-
         setLoading(true);
 
-        // =========================
-        // FETCH BLOG
-        // =========================
-        const blogRes =
-          await blogService.getBlog(id);
-
-        const blog =
-          blogRes?.data ||
-          blogRes?.blog ||
-          blogRes;
+        const res = await blogService.getBlog(id);
+        const blog = res?.data ?? res;
 
         if (!blog?._id) {
           navigate("/");
@@ -72,198 +51,106 @@ export default function Post() {
 
         setPost(blog);
 
-        // =========================
-        // FETCH LIKE COUNT
-        // PUBLIC ROUTE
-        // =========================
+        /* ================= LIKE COUNT ================= */
         try {
-          const likeRes =
-            await likeService.getBlogLikeCount(
-              blog._id
-            );
-
-          const count = Number(
-            likeRes?.data?.likeCount || 0
-          );
-
-          setLikes(count);
-        } catch (err) {
-          console.error(
-            "Like count fetch failed:",
-            err
-          );
-
+          const likeRes = await likeService.getBlogLikeCount(blog._id);
+          const count = likeRes?.data?.likeCount ?? 0;
+          setLikes(Number(count));
+        } catch {
           setLikes(0);
         }
 
-        // =========================
-        // CHECK IF USER LIKED
-        // ONLY IF LOGGED IN
-        // =========================
+        /* ================= CHECK IF LIKED ================= */
         if (user) {
           try {
-            const likedBlogs =
-              await likeService.getLikedBlogs();
+            const likedRes = await likeService.getLikedBlogs();
 
-            const likedArray =
-              likedBlogs?.data || [];
+            const likedArray = likedRes?.data ?? likedRes ?? [];
 
-            const hasLiked =
-              likedArray.some(
-                (like) =>
-                  String(
-                    like.blog?._id ||
-                      like.blog
-                  ) === String(blog._id)
-              );
-
-            setLiked(hasLiked);
-          } catch (err) {
-            console.error(
-              "Liked blogs fetch failed:",
-              err
+            const hasLiked = likedArray.some((l) =>
+              String(l.blog?._id || l.blog) === String(blog._id)
             );
 
+            setLiked(hasLiked);
+          } catch {
             setLiked(false);
           }
         }
       } catch (err) {
-        console.error(
-          "Post fetch error:",
-          err
-        );
-
+        console.error("Post load error:", err);
         navigate("/");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    load();
   }, [id, user, navigate]);
 
-  // =========================
-  // LIKE / UNLIKE
-  // =========================
+  /* ================= LIKE TOGGLE ================= */
   const handleLikeToggle = () => {
     requireAuth(async () => {
       try {
         if (!post?._id) return;
 
         if (liked) {
-          await likeService.unlikeBlog(
-            post._id
-          );
-
+          await likeService.unlikeBlog(post._id);
           setLiked(false);
-
-          setLikes((prev) =>
-            Math.max(prev - 1, 0)
-          );
+          setLikes((p) => Math.max(p - 1, 0));
         } else {
-          await likeService.likeBlog(
-            post._id
-          );
-
+          await likeService.likeBlog(post._id);
           setLiked(true);
-
-          setLikes((prev) => prev + 1);
+          setLikes((p) => p + 1);
         }
       } catch (err) {
-        console.error(
-          "Like toggle failed:",
-          err
-        );
+        console.error("Like error:", err);
       }
     });
   };
 
-  // =========================
-  // DELETE POST
-  // =========================
+  /* ================= DELETE POST ================= */
   const handleDelete = () => {
     requireAuth(async () => {
-      const confirmDelete =
-        window.confirm(
-          "Delete this post?"
-        );
-
-      if (!confirmDelete) return;
+      if (!window.confirm("Delete this post?")) return;
 
       try {
-        await blogService.deleteBlog(
-          post._id
-        );
-
+        await blogService.deleteBlog(post._id);
         navigate("/");
       } catch (err) {
-        console.error(
-          "Delete failed:",
-          err
-        );
-
-        alert(
-          "Failed to delete post"
-        );
+        console.error("Delete error:", err);
       }
     });
   };
 
-  // =========================
-  // LOADING
-  // =========================
-  if (loading) {
-    return (
-      <div className="flex justify-center py-10">
-        Loading post...
-      </div>
-    );
-  }
-
-  // =========================
-  // NO POST
-  // =========================
-  if (!post) {
-    return (
-      <div className="text-center py-10">
-        Post not found
-      </div>
-    );
-  }
+  /* ================= UI STATES ================= */
+  if (loading) return <div className="text-center py-10">Loading...</div>;
+  if (!post) return <div className="text-center py-10">Post not found</div>;
 
   return (
     <Container>
       <div className="max-w-4xl mx-auto py-8">
+
         {/* IMAGE */}
         {post.image && (
           <img
             src={post.image}
             alt={post.title}
-            className="w-full max-h-[500px] object-cover rounded-xl shadow"
+            className="w-full max-h-[500px] object-cover rounded-xl"
           />
         )}
 
         {/* TITLE */}
-        <h1 className="text-4xl font-bold mt-6">
-          {post.title}
-        </h1>
+        <h1 className="text-4xl font-bold mt-6">{post.title}</h1>
 
         {/* AUTHOR */}
         <p className="text-gray-500 mt-2">
-          By{" "}
-          {post.owner?.username ||
-            "Unknown"}
+          By {post.owner?.username || "Unknown"}
         </p>
 
-        {/* LIKE BUTTON */}
+        {/* LIKE */}
         <div className="mt-6">
-          <Button
-            onClick={handleLikeToggle}
-          >
-            {liked
-              ? "💔 Unlike"
-              : "👍 Like"}{" "}
-            ({likes})
+          <Button onClick={handleLikeToggle}>
+            {liked ? "💔 Unlike" : "👍 Like"} ({likes})
           </Button>
         </div>
 
@@ -272,20 +159,14 @@ export default function Post() {
           {parse(post.content || "")}
         </div>
 
-        {/* AUTHOR ACTIONS */}
+        {/* ACTIONS */}
         {isAuthor && (
           <div className="flex gap-4 mt-8">
-            <Link
-              to={`/edit-post/${post._id}`}
-            >
+            <Link to={`/posts/${post._id}/edit`}>
               <Button>Edit</Button>
             </Link>
 
-            <Button
-              onClick={handleDelete}
-            >
-              Delete
-            </Button>
+            <Button onClick={handleDelete}>Delete</Button>
           </div>
         )}
 

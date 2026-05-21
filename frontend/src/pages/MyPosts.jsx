@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Container, PostCard } from "../components/index";
 import { blogService } from "../api/services/blogService";
 
@@ -9,10 +9,14 @@ function MyPosts() {
   useEffect(() => {
     const fetchMyPosts = async () => {
       try {
-        const data = await blogService.getMyBlogs();
+        setLoading(true);
 
-        // backend returns: { success, data }
-        setPosts(data?.data || []);
+        const res = await blogService.getMyBlogs();
+
+        // FIX: backend ApiResponse => { success, data }
+        const blogs = res?.data ?? res ?? [];
+
+        setPosts(Array.isArray(blogs) ? blogs : []);
       } catch (error) {
         console.error("Error fetching my posts:", error);
         setPosts([]);
@@ -25,30 +29,22 @@ function MyPosts() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="text-center py-10 text-gray-600">
-        Loading...
-      </div>
-    );
+    return <div className="text-center py-10">Loading...</div>;
   }
 
   return (
     <Container>
-      <div className="w-full py-6">
-        {posts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch auto-rows-fr">
-            {posts.map((post) => (
-              <div key={post._id} className="h-full flex">
-                <PostCard post={post} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-500">
-            No posts created by you
-          </p>
-        )}
-      </div>
+      {posts.length === 0 ? (
+        <p className="text-center text-gray-500">
+          No posts created by you
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {posts.map((post) => (
+            <PostCard key={post._id} post={post} />
+          ))}
+        </div>
+      )}
     </Container>
   );
 }

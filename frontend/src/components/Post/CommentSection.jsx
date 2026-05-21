@@ -10,10 +10,9 @@ function CommentSection({ blogId, currentUser }) {
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState("");
 
-  // ================= FETCH =================
+  /* ================= FETCH COMMENTS ================= */
   useEffect(() => {
-    if (!blogId) return;
-    fetchComments();
+    if (blogId) fetchComments();
   }, [blogId]);
 
   const fetchComments = async () => {
@@ -21,9 +20,9 @@ function CommentSection({ blogId, currentUser }) {
       setLoading(true);
 
       const res = await commentService.getComments(blogId);
-      const list = res?.data ?? res;
+      const data = res?.data ?? res ?? [];
 
-      setComments(Array.isArray(list) ? list : []);
+      setComments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
       setComments([]);
@@ -32,7 +31,7 @@ function CommentSection({ blogId, currentUser }) {
     }
   };
 
-  // ================= ADD =================
+  /* ================= ADD COMMENT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -44,7 +43,7 @@ function CommentSection({ blogId, currentUser }) {
 
       const res = await commentService.addComment(
         blogId,
-        newComment.trim()
+        newComment
       );
 
       const comment = res?.data ?? res;
@@ -61,7 +60,7 @@ function CommentSection({ blogId, currentUser }) {
     }
   };
 
-  // ================= DELETE =================
+  /* ================= DELETE ================= */
   const handleDelete = async (id) => {
     if (!window.confirm("Delete comment?")) return;
 
@@ -73,22 +72,12 @@ function CommentSection({ blogId, currentUser }) {
     }
   };
 
-  // ================= EDIT =================
-  const startEdit = (comment) => {
-    setEditingId(comment._id);
-    setEditContent(comment.content);
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditContent("");
-  };
-
+  /* ================= UPDATE ================= */
   const handleUpdate = async (id) => {
     if (!editContent.trim()) return;
 
     try {
-      const res = await commentService.updateComment(id, editContent.trim());
+      const res = await commentService.updateComment(id, editContent);
       const updated = res?.data ?? res;
 
       setComments((prev) =>
@@ -99,14 +88,20 @@ function CommentSection({ blogId, currentUser }) {
         )
       );
 
-      cancelEdit();
+      setEditingId(null);
+      setEditContent("");
     } catch (err) {
       console.error(err);
     }
   };
 
-  // ================= LOADING =================
-  if (loading) return <div className="p-4">Loading comments...</div>;
+  /* ================= FIXED AUTHOR CHECK ================= */
+  const getUserId = (user) => {
+    return user?._id || user?.user?._id || user;
+  };
+
+  /* ================= UI ================= */
+  if (loading) return <div className="p-4">Loading...</div>;
 
   return (
     <div className="mt-10">
@@ -114,19 +109,17 @@ function CommentSection({ blogId, currentUser }) {
         Comments ({comments.length})
       </h2>
 
-      {/* ADD COMMENT */}
+      {/* COMMENT INPUT */}
       {currentUser ? (
         <form onSubmit={handleSubmit} className="mb-6">
           <textarea
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             className="w-full border p-3 rounded"
-            rows={4}
             placeholder="Write a comment..."
           />
 
           <button
-            type="submit"
             disabled={submitting}
             className="mt-2 bg-blue-600 text-white px-4 py-2 rounded"
           >
@@ -134,81 +127,80 @@ function CommentSection({ blogId, currentUser }) {
           </button>
         </form>
       ) : (
-        <p className="text-gray-500 mb-4">Login to comment</p>
+        <p className="text-gray-500">Login to comment</p>
       )}
 
-      {/* LIST */}
-      {comments.length === 0 ? (
-        <p className="text-gray-500">No comments yet</p>
-      ) : (
-        comments.map((c) => {
-          const commentUserId = c.user?._id || c.user;
+      {/* COMMENTS */}
+      {comments.map((c) => {
+        const isAuthor =
+          String(getUserId(currentUser)) === String(getUserId(c.user));
 
-          const isAuthor =
-            currentUser &&
-            String(currentUser._id) === String(commentUserId);
+        return (
+          <div key={c._id} className="border p-4 mb-3 rounded">
 
-          return (
-            <div key={c._id} className="border p-4 mb-3 rounded">
-              <div className="text-sm font-semibold">
-                {c.user?.username || "User"}
-              </div>
+            {/* USER */}
+            <div className="text-sm font-semibold">
+              {c.user?.username || "User"}
+            </div>
 
-              {editingId === c._id ? (
-                <>
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full border p-2 mt-2 rounded"
-                  />
+            {/* EDIT MODE */}
+            {editingId === c._id ? (
+              <>
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full border p-2 mt-2"
+                />
 
-                  <div className="flex gap-3 mt-2">
+                <div className="flex gap-3 mt-2">
+                  <button
+                    onClick={() => handleUpdate(c._id)}
+                    className="text-green-600"
+                  >
+                    Save
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setEditingId(null);
+                      setEditContent("");
+                    }}
+                    className="text-gray-500"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mt-2">{c.content}</p>
+
+                {/* 🔥 EDIT BUTTON FIXED */}
+                {isAuthor && (
+                  <div className="flex gap-3 text-sm mt-2">
                     <button
-                      type="button"
-                      onClick={() => handleUpdate(c._id)}
-                      className="text-green-600"
+                      onClick={() => {
+                        setEditingId(c._id);
+                        setEditContent(c.content);
+                      }}
+                      className="text-blue-600"
                     >
-                      Save
+                      Edit
                     </button>
 
                     <button
-                      type="button"
-                      onClick={cancelEdit}
-                      className="text-gray-500"
+                      onClick={() => handleDelete(c._id)}
+                      className="text-red-500"
                     >
-                      Cancel
+                      Delete
                     </button>
                   </div>
-                </>
-              ) : (
-                <>
-                  <p className="mt-2">{c.content}</p>
-
-                  {isAuthor && (
-                    <div className="flex gap-3 text-xs mt-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(c)}
-                        className="text-blue-600"
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(c._id)}
-                        className="text-red-500"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          );
-        })
-      )}
+                )}
+              </>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
