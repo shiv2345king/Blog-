@@ -17,7 +17,7 @@ export const aiService = {
       },
     });
 
-    // ✅ FIX: return ONLY usable data
-    return res?.data;
+    // 🔥 FIX: normalize backend shape
+    return res?.data ?? res;
   },
 };

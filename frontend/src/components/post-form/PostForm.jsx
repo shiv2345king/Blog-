@@ -40,10 +40,13 @@ export default function PostForm({ post }) {
         return;
       }
 
-      // ✅ FIX: aiService already returns data (after previous fix)
+      // ✅ aiService already returns normalized object
       const result = await aiService.reviewBlog(cleaned);
 
-      setAiFeedback(result);
+      setAiFeedback({
+        correctedText: result?.correctedText || "",
+        errors: result?.errors || [],
+      });
     } catch (error) {
       console.error("AI Review Error:", error);
       setAiFeedback(null);
@@ -87,7 +90,10 @@ export default function PostForm({ post }) {
       className="w-full max-w-6xl mx-auto flex flex-col gap-8 p-6 font-semibold text-gray-900"
     >
       {/* TITLE */}
-      <Input label="Title" {...register("title", { required: true })} />
+      <Input
+        label="Title"
+        {...register("title", { required: true })}
+      />
 
       {/* CONTENT */}
       <div className="w-full font-medium text-gray-900">
@@ -102,6 +108,29 @@ export default function PostForm({ post }) {
       >
         AI Review
       </Button>
+
+      {/* AI LOADING */}
+      {aiLoading && (
+        <p className="text-sm text-gray-500">
+          AI analyzing...
+        </p>
+      )}
+
+      {/* AI RESULT */}
+      {aiFeedback?.correctedText && (
+        <div className="bg-gray-100 p-4 rounded-md">
+          <h3 className="font-bold mb-2">AI Suggested Version:</h3>
+          <p className="whitespace-pre-wrap text-sm">
+            {aiFeedback.correctedText}
+          </p>
+
+          {aiFeedback.errors?.length > 0 && (
+            <div className="mt-2 text-xs text-red-600">
+              Issues: {aiFeedback.errors.join(", ")}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* IMAGE */}
       <Input type="file" accept="image/*" {...register("image")} />
@@ -124,18 +153,6 @@ export default function PostForm({ post }) {
       >
         {post ? "Update Post" : "Publish"}
       </Button>
-
-      {/* AI LOADING */}
-      {aiLoading && (
-        <p className="text-sm text-gray-500">AI analyzing...</p>
-      )}
-
-      {/* AI RESPONSE */}
-      {aiFeedback && (
-        <pre className="text-xs bg-gray-100 p-3 rounded-md overflow-auto">
-          {JSON.stringify(aiFeedback, null, 2)}
-        </pre>
-      )}
     </form>
   );
 }
