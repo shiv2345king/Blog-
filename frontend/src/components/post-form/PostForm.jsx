@@ -19,6 +19,35 @@ export default function PostForm({ post }) {
   const [aiFeedback, setAiFeedback] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
 
+  // ================= COPY =================
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("Copied to clipboard");
+    } catch (err) {
+      console.error("Copy failed", err);
+    }
+  };
+
+  // ================= DIFF HIGHLIGHT =================
+  const highlightDiff = (original = "", corrected = "") => {
+    const origWords = original.split(" ");
+    const corrWords = corrected.split(" ");
+
+    return corrWords.map((word, i) => {
+      const isDifferent = word !== origWords[i];
+
+      return (
+        <span
+          key={i}
+          className={isDifferent ? "bg-green-200 px-1 rounded" : ""}
+        >
+          {word + " "}
+        </span>
+      );
+    });
+  };
+
   // ================= AI REVIEW =================
   const handleAiReview = async () => {
     try {
@@ -40,7 +69,6 @@ export default function PostForm({ post }) {
         return;
       }
 
-      // ✅ aiService already returns normalized object
       const result = await aiService.reviewBlog(cleaned);
 
       setAiFeedback({
@@ -90,10 +118,7 @@ export default function PostForm({ post }) {
       className="w-full max-w-6xl mx-auto flex flex-col gap-8 p-6 font-semibold text-gray-900"
     >
       {/* TITLE */}
-      <Input
-        label="Title"
-        {...register("title", { required: true })}
-      />
+      <Input label="Title" {...register("title", { required: true })} />
 
       {/* CONTENT */}
       <div className="w-full font-medium text-gray-900">
@@ -109,23 +134,41 @@ export default function PostForm({ post }) {
         AI Review
       </Button>
 
-      {/* AI LOADING */}
+      {/* LOADING */}
       {aiLoading && (
-        <p className="text-sm text-gray-500">
-          AI analyzing...
-        </p>
+        <p className="text-sm text-gray-500">AI analyzing...</p>
       )}
 
       {/* AI RESULT */}
       {aiFeedback?.correctedText && (
-        <div className="bg-gray-100 p-4 rounded-md">
-          <h3 className="font-bold mb-2">AI Suggested Version:</h3>
-          <p className="whitespace-pre-wrap text-sm">
-            {aiFeedback.correctedText}
-          </p>
+        <div className="bg-gray-100 p-4 rounded-md space-y-3">
 
+          {/* HEADER */}
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold">AI Suggested Version</h3>
+
+            <button
+              type="button"
+              onClick={() =>
+                copyToClipboard(aiFeedback.correctedText)
+              }
+              className="text-sm bg-black text-white px-3 py-1 rounded"
+            >
+              Copy
+            </button>
+          </div>
+
+          {/* HIGHLIGHT DIFF */}
+          <div className="text-sm leading-6">
+            {highlightDiff(
+              getValues("content"),
+              aiFeedback.correctedText
+            )}
+          </div>
+
+          {/* ERRORS */}
           {aiFeedback.errors?.length > 0 && (
-            <div className="mt-2 text-xs text-red-600">
+            <div className="text-xs text-red-600">
               Issues: {aiFeedback.errors.join(", ")}
             </div>
           )}
