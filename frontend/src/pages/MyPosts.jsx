@@ -2,26 +2,26 @@ import React, { useState, useEffect } from "react";
 import { Container, PostCard } from "../components/index";
 import { blogService } from "../api/services/blogService";
 
-function AllPosts() {
+function MyPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchMyPosts = async () => {
       try {
-        const data = await blogService.getAllBlogs();
+        const data = await blogService.getMyBlogs();
 
-        // safer handling (handles both array and axios-style response)
-        setPosts(Array.isArray(data) ? data : data?.data || []);
+        // backend returns: { success, data }
+        setPosts(data?.data || []);
       } catch (error) {
-        console.error("Error fetching posts:", error);
+        console.error("Error fetching my posts:", error);
         setPosts([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPosts();
+    fetchMyPosts();
   }, []);
 
   if (loading) {
@@ -45,7 +45,7 @@ function AllPosts() {
           </div>
         ) : (
           <p className="text-center text-gray-500">
-            No posts found
+            No posts created by you
           </p>
         )}
       </div>
@@ -53,4 +53,4 @@ function AllPosts() {
   );
 }
 
-export default AllPosts;
+export default MyPosts;

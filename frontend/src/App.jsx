@@ -13,7 +13,7 @@ import Home from "./pages/Home.jsx";
 import Login from "./components/Login.jsx";
 import SignUp from "./components/SignUp.jsx";
 import Post from "./pages/Post.jsx";
-import AllPosts from "./pages/AllPost.jsx";
+import MyPosts from "./pages/MyPost.jsx";
 import UpdatePost from "./pages/UpdatePost.jsx";
 import AddPost from "./pages/AddPost.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -70,7 +70,7 @@ function App() {
         <Route path="/posts/:id" element={<Post />} />
         <Route path="/posts/:id/edit" element={<UpdatePost />} />
         <Route path="/add-post" element={<AddPost />} />
-        <Route path="/all-posts" element={<AllPosts />} />
+        <Route path="/my-posts" element={<MyPosts />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="*" element={<Home />} />
       </Routes>

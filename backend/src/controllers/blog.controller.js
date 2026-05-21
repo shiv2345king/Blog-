@@ -74,7 +74,15 @@ export const getBlogById = asyncHandler(async (req, res) => {
     });
 });
 
+export const getMyBlogs = asyncHandler(async (req, res) => {
+    const blogs = await Blog.find({ owner: req.user._id })
+        .populate("owner", "username email");
 
+    return res.status(200).json({
+        success: true,
+        data: blogs,
+    });
+});
 /* =========================
    UPDATE BLOG
 ========================= */
