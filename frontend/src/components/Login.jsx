@@ -5,6 +5,7 @@ import { userService } from '../api/services/userService'
 import { useDispatch } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
+import bg from '../assets/bg.jpg'
 
 function Login() {
   const dispatch = useDispatch()
@@ -19,10 +20,8 @@ function Login() {
       const res = await userService.login(data)
 
       if (res) {
-        // ✅ Save token
         localStorage.setItem("accessToken", res.accessToken)
 
-        // ✅ Update redux
         dispatch(userLogin({
           user: res.user
         }))
@@ -36,52 +35,63 @@ function Login() {
   }
 
   return (
-    <div className='flex items-center justify-center w-full'>
-      <div className='mx-auto w-full max-w-lg bg-gray-100 rounded-xl p-10 border border-black/10'>
+    <div
+      className="flex items-center justify-center min-h-screen w-full bg-cover bg-center relative"
+      style={{ backgroundImage: `url(${bg})` }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/50"></div>
 
-        <h2 className="text-center text-2xl font-bold">Sign in</h2>
+      {/* Content */}
+      <div className="relative w-full flex justify-center px-4">
 
-        <p className="mt-2 text-center text-sm">
-          Don&apos;t have an account?{" "}
-          <Link to="/signup" className="text-blue-600 hover:underline">
-            Sign Up
-          </Link>
-        </p>
+        <div className="w-full max-w-lg bg-gray-100 rounded-xl p-10 border border-black/10">
 
-        {error && (
-          <p className="text-red-600 mt-6 text-center">{error}</p>
-        )}
+          <h2 className="text-center text-2xl font-bold">Sign in</h2>
 
-        <form onSubmit={handleSubmit(login)} className='mt-8'>
-          <div className='space-y-5'>
+          <p className="mt-2 text-center text-sm">
+            Don&apos;t have an account?{" "}
+            <Link to="/signup" className="text-blue-600 hover:underline">
+              Sign Up
+            </Link>
+          </p>
 
-            <Input
-              label="Email"
-              type="email"
-              {...register("email", {
-                required: "Email is required",
-                validate: {
-                  matchPattern: (value) =>
-                    /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value)
-                    || "Invalid email"
-                }
-              })}
-            />
+          {error && (
+            <p className="text-red-600 mt-6 text-center">{error}</p>
+          )}
 
-            <Input
-              label="Password"
-              type="password"
-              {...register("password", {
-                required: "Password is required"
-              })}
-            />
+          <form onSubmit={handleSubmit(login)} className="mt-8">
+            <div className="space-y-5">
 
-            <Button type="submit" className="w-full">
-              Login
-            </Button>
+              <Input
+                label="Email"
+                type="email"
+                {...register("email", {
+                  required: "Email is required",
+                  validate: {
+                    matchPattern: (value) =>
+                      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value)
+                      || "Invalid email"
+                  }
+                })}
+              />
 
-          </div>
-        </form>
+              <Input
+                label="Password"
+                type="password"
+                {...register("password", {
+                  required: "Password is required"
+                })}
+              />
+
+              <Button type="submit" className="w-full">
+                Login
+              </Button>
+
+            </div>
+          </form>
+
+        </div>
       </div>
     </div>
   )

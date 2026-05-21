@@ -58,32 +58,27 @@ function App() {
     );
   }
 
-  return (
-    <div className="min-h-screen flex flex-col bg-blue-100">
-      <Header />
+ return (
+  <div className="min-h-screen w-full flex flex-col bg-blue-100">
+    <Header />
 
-      <main className="flex-grow">
-        <Routes>
-          <Route path="/" element={<Home />} />
+    <main className="flex-1 w-full flex flex-col">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/posts/:id" element={<Post />} />
+        <Route path="/posts/:id/edit" element={<UpdatePost />} />
+        <Route path="/add-post" element={<AddPost />} />
+        <Route path="/all-posts" element={<AllPosts />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="*" element={<Home />} />
+      </Routes>
+    </main>
 
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-
-          {/* ✅ ID-based routes */}
-          <Route path="/posts/:id" element={<Post />} />
-          <Route path="/posts/:id/edit" element={<UpdatePost />} />
-
-          <Route path="/add-post" element={<AddPost />} />
-          <Route path="/all-posts" element={<AllPosts />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          {/* fallback */}
-          <Route path="*" element={<Home />} />
-        </Routes>
-      </main>
-
-      <Footer />
-    </div>
-  );
+    <Footer className="w-full mt-auto" />
+  </div>
+);
 }
 
 export default App;
