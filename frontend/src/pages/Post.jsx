@@ -2,17 +2,17 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-import { blogService } from "../api/services/blogService";
+import { blogService } from "../api/services/blogService.js";
 
 import {
   Container,
   Loader,
-} from "../components";
+} from "../components/index.js";
 
-import PostContent from "../components/post/PostContent";
-import PostActions from "../components/post/PostActions";
-import CommentSection from "../components/post/CommentSection";
-import AIReviewPanel from "../components/post/AIReviewPanel";
+import PostContent from "../components/post/PostContent.jsx";
+import PostActions from "../components/post/PostActions.jsx";
+import CommentSection from "../components/post/CommentSection.jsx";
+import AIReviewPanel from "../components/post/AIReviewPanel.jsx";
 
 function Post() {
   const { id } = useParams();
