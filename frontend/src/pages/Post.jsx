@@ -224,19 +224,6 @@ function Post() {
               />
             </div>
 
-            {/* AI REVIEW */}
-            <div className="mt-10">
-              <AIReviewPanel
-                content={
-                  post?.content
-                    ?.replace(
-                      /<[^>]*>/g,
-                      ""
-                    ) || ""
-                }
-              />
-            </div>
-
             {/* COMMENTS */}
             <div className="mt-14 border-t border-gray-200 pt-10">
               <CommentSection
