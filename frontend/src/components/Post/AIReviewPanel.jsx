@@ -24,12 +24,10 @@ export default function AIReviewPanel({ content }) {
       setError("");
 
       const res = await aiService.reviewBlog(content);
-
-      const aiText =
-        res?.data?.review ??
-        res?.review ??
-        res?.data ??
-        "";
+const aiText =
+  res?.data?.data?.review ||
+  res?.data?.data?.correctedText ||
+  "";
 
       if (!aiText) {
         setError("No response from AI");
