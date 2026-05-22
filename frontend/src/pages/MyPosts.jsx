@@ -6,18 +6,33 @@ function MyPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [currentUser, setCurrentUser] =
+    useState(null);
+
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
 
-        const res = await blogService.getMyBlogs();
+        const res =
+          await blogService.getMyBlogs();
 
-        console.log("RAW MY POSTS:", res);
+        setPosts(
+          Array.isArray(res) ? res : []
+        );
 
-        setPosts(Array.isArray(res) ? res : []);
+        // ✅ FIX
+        const user = JSON.parse(
+          localStorage.getItem("user") || "null"
+        );
+
+        setCurrentUser(user);
       } catch (err) {
-        console.error("MY POSTS ERROR:", err);
+        console.error(
+          "MY POSTS ERROR:",
+          err
+        );
+
         setPosts([]);
       } finally {
         setLoading(false);
@@ -41,7 +56,11 @@ function MyPosts() {
         {posts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {posts.map((post) => (
-              <PostCard key={post._id} post={post} />
+              <PostCard
+                key={post._id}
+                post={post}
+                currentUser={currentUser}
+              />
             ))}
           </div>
         ) : (

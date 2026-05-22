@@ -63,10 +63,8 @@ function PostCard({ post, currentUser }) {
       onClick={openPost}
       className="group bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
     >
-
       {/* IMAGE */}
       <div className="relative h-56 overflow-hidden bg-gray-100">
-
         {post?.image ? (
           <img
             src={post.image}
@@ -79,13 +77,11 @@ function PostCard({ post, currentUser }) {
           </div>
         )}
 
-        {/* OVERLAY */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition duration-300" />
       </div>
 
       {/* CONTENT */}
       <div className="p-5">
-
         {/* TITLE */}
         <h2 className="text-xl font-bold text-gray-800 line-clamp-2">
           {post?.title || "Untitled Post"}
@@ -100,7 +96,6 @@ function PostCard({ post, currentUser }) {
 
         {/* FOOTER */}
         <div className="mt-6 flex items-center justify-between">
-
           {/* DATE */}
           <div className="text-xs text-gray-400">
             {post?.createdAt
@@ -116,7 +111,6 @@ function PostCard({ post, currentUser }) {
               className="flex items-center gap-4"
               onClick={(e) => e.stopPropagation()}
             >
-
               <Link
                 to={`/posts/${post._id}/edit`}
                 className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition"
@@ -130,7 +124,6 @@ function PostCard({ post, currentUser }) {
               >
                 Delete
               </button>
-
             </div>
           )}
         </div>

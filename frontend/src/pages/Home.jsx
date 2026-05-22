@@ -12,21 +12,26 @@ function Home() {
       try {
         setLoading(true);
 
-        // ✅ get clean array directly from service
-        const postsData = await blogService.getAllBlogs();
+        const postsData =
+          await blogService.getAllBlogs();
 
-        console.log("HOME POSTS:", postsData);
+        setPosts(
+          Array.isArray(postsData)
+            ? postsData
+            : []
+        );
 
-        setPosts(Array.isArray(postsData) ? postsData : []);
-
-        // ✅ load current user
         const user = JSON.parse(
           localStorage.getItem("user") || "null"
         );
 
         setCurrentUser(user);
       } catch (error) {
-        console.error("Error fetching posts:", error);
+        console.error(
+          "Error fetching posts:",
+          error
+        );
+
         setPosts([]);
       } finally {
         setLoading(false);
@@ -36,7 +41,6 @@ function Home() {
     fetchData();
   }, []);
 
-  // ================= LOADING =================
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -45,7 +49,6 @@ function Home() {
     );
   }
 
-  // ================= EMPTY STATE =================
   if (!posts.length) {
     return (
       <Container>
@@ -56,7 +59,6 @@ function Home() {
     );
   }
 
-  // ================= UI =================
   return (
     <div className="w-full py-8">
       <Container>
