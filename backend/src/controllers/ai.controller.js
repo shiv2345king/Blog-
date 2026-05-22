@@ -21,18 +21,18 @@ export const reviewBlog = async (req, res) => {
         console.log("RESULT KEYS:", Object.keys(result));
         console.log("correctedText type:", typeof result?.correctedText);
 
-        return res.status(200).json({
-            success: true,
-            data: result
-        });
+       return res.status(200).json({
+       success: true,
+       review: result
+});
 
     } catch (error) {
         console.error("FULL AI ERROR:", error);
 
         return res.status(500).json({
             success: false,
-            message: error.message,
-            stack: error.stack
-        });
-    }
-};
+            message: "AI review failed",
+            error: error.message || "Unknown error"
+    })
+}
+}
