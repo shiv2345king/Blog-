@@ -1,8 +1,14 @@
 import React from "react";
 import { blogService } from "../api/services/blogService";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
 
-function PostCard({ post, currentUser }) {
+function PostCard({
+  post,
+  currentUser,
+}) {
   const navigate = useNavigate();
 
   /* ================= SAFE USER ID ================= */
@@ -19,7 +25,8 @@ function PostCard({ post, currentUser }) {
   };
 
   /* ================= CURRENT USER ================= */
-  const currentUserId = getUserId(currentUser);
+  const currentUserId =
+    getUserId(currentUser);
 
   /* ================= OWNER ID ================= */
   const ownerId =
@@ -31,25 +38,44 @@ function PostCard({ post, currentUser }) {
   const isAuthor =
     currentUserId &&
     ownerId &&
-    String(currentUserId) === String(ownerId);
+    String(currentUserId) ===
+      String(ownerId);
+
+  /* ================= DEBUG ================= */
+  console.log("========== POST CARD ==========");
+  console.log("POST:", post);
+  console.log("CURRENT USER:", currentUser);
+  console.log("CURRENT USER ID:", currentUserId);
+  console.log("OWNER:", post?.owner);
+  console.log("OWNER ID:", ownerId);
+  console.log("IS AUTHOR:", isAuthor);
 
   /* ================= DELETE ================= */
   const handleDelete = async (e) => {
     e.stopPropagation();
 
-    const confirmDelete = window.confirm(
-      "Delete this post?"
-    );
+    const confirmDelete =
+      window.confirm(
+        "Delete this post?"
+      );
 
     if (!confirmDelete) return;
 
     try {
-      await blogService.deleteBlog(post._id);
+      await blogService.deleteBlog(
+        post._id
+      );
 
       window.location.reload();
     } catch (err) {
-      console.error("Delete failed:", err);
-      alert("Failed to delete post");
+      console.error(
+        "Delete failed:",
+        err
+      );
+
+      alert(
+        "Failed to delete post"
+      );
     }
   };
 
@@ -77,50 +103,75 @@ function PostCard({ post, currentUser }) {
           </div>
         )}
 
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition duration-300" />
+        {/* OVERLAY */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
       </div>
 
       {/* CONTENT */}
       <div className="p-5">
         {/* TITLE */}
-        <h2 className="text-xl font-bold text-gray-800 line-clamp-2">
-          {post?.title || "Untitled Post"}
+        <h2 className="text-xl font-bold text-gray-800 line-clamp-2 group-hover:text-blue-600 transition">
+          {post?.title ||
+            "Untitled Post"}
         </h2>
 
         {/* CONTENT */}
         <p className="mt-3 text-sm leading-6 text-gray-600 line-clamp-3">
           {post?.content
             ?.replace(/<[^>]*>/g, "")
-            ?.slice(0, 180) || "No content"}
+            ?.slice(0, 180) ||
+            "No content"}
         </p>
+
+        {/* AUTHOR */}
+        <div className="mt-4 flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold uppercase">
+            {post?.owner?.username
+              ? post.owner.username[0]
+              : "U"}
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-gray-700">
+              {post?.owner
+                ?.username || "Unknown"}
+            </p>
+
+            <p className="text-xs text-gray-400">
+              {post?.createdAt
+                ? new Date(
+                    post.createdAt
+                  ).toLocaleDateString()
+                : ""}
+            </p>
+          </div>
+        </div>
 
         {/* FOOTER */}
         <div className="mt-6 flex items-center justify-between">
-          {/* DATE */}
-          <div className="text-xs text-gray-400">
-            {post?.createdAt
-              ? new Date(
-                  post.createdAt
-                ).toLocaleDateString()
-              : ""}
-          </div>
+          {/* READ MORE */}
+          <button className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition">
+            Read More →
+          </button>
 
           {/* ACTIONS */}
           {isAuthor && (
             <div
               className="flex items-center gap-4"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) =>
+                e.stopPropagation()
+              }
             >
               <Link
                 to={`/posts/${post._id}/edit`}
-                className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition"
+                className="px-3 py-1.5 rounded-lg bg-blue-50 text-sm font-semibold text-blue-600 hover:bg-blue-100 transition"
               >
                 Edit
               </Link>
 
               <button
                 onClick={handleDelete}
-                className="text-sm font-semibold text-red-500 hover:text-red-700 transition"
+                className="px-3 py-1.5 rounded-lg bg-red-50 text-sm font-semibold text-red-500 hover:bg-red-100 transition"
               >
                 Delete
               </button>

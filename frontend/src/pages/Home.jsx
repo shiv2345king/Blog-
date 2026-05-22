@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { blogService } from "../api/services/blogService.js";
 import { Container, PostCard } from "../components";
+import { useSelector } from "react-redux";
 
 function Home() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null);
+
+  // ✅ GET USER FROM REDUX
+  const currentUser = useSelector(
+    (state) => state.user.user
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -20,12 +25,6 @@ function Home() {
             ? postsData
             : []
         );
-
-        const user = JSON.parse(
-          localStorage.getItem("user") || "null"
-        );
-
-        setCurrentUser(user);
       } catch (error) {
         console.error(
           "Error fetching posts:",

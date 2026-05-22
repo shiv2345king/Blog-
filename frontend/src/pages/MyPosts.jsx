@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Container, PostCard } from "../components/index.js";
 import { blogService } from "../api/services/blogService.js";
+import { useSelector } from "react-redux";
 
 function MyPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [currentUser, setCurrentUser] =
-    useState(null);
+  // ✅ REDUX USER
+  const currentUser = useSelector(
+    (state) => state.user.user
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -20,13 +23,6 @@ function MyPosts() {
         setPosts(
           Array.isArray(res) ? res : []
         );
-
-        // ✅ FIX
-        const user = JSON.parse(
-          localStorage.getItem("user") || "null"
-        );
-
-        setCurrentUser(user);
       } catch (err) {
         console.error(
           "MY POSTS ERROR:",
