@@ -2,58 +2,76 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-import { blogService } from "../api/services/blogService.js";
+import { blogService } from "../api/services/blogService";
 
 import {
   Container,
+  Loader,
 } from "../components";
 
-// ================= COMPONENTS =================
-import PostContent from "../components/Post/PostContent.jsx";
-import PostActions from "../components/Post/PostActions.jsx";
-import CommentSection from "../components/Post/CommentSection.jsx";
-import AIReviewPanel from "../components/Post/AIReviewPanel.jsx";
+import PostContent from "../components/post/PostContent";
+import PostActions from "../components/post/PostActions";
+import CommentSection from "../components/post/CommentSection";
+import AIReviewPanel from "../components/post/AIReviewPanel";
 
 function Post() {
   const { id } = useParams();
+
   const navigate = useNavigate();
 
-  const currentUser = useSelector((state) => state.user.user);
+  const reduxUser = useSelector(
+    (state) => state.user.user
+  );
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ================= FETCH POST =================
+  /* ================= SAFE USER ID ================= */
+  const getUserId = (user) => {
+    if (!user) return null;
+
+    return (
+      user?._id ||
+      user?.id ||
+      user?.data?._id ||
+      user?.user?._id ||
+      null
+    );
+  };
+
+  /* ================= CURRENT USER ================= */
+  const currentUserId = getUserId(reduxUser);
+
+  /* ================= FETCH POST ================= */
   useEffect(() => {
     const fetchPost = async () => {
       try {
         setLoading(true);
 
-        const data = await blogService.getBlog(id);
+        const res = await blogService.getBlogById(id);
 
-        console.log("POST DATA:", data);
-
-        if (!data?._id) {
-          navigate("/");
-          return;
-        }
+        const data =
+          res?.data?.data ||
+          res?.data ||
+          res;
 
         setPost(data);
-      } catch (error) {
-        console.error("POST FETCH ERROR:", error);
-        navigate("/");
+      } catch (err) {
+        console.error("Fetch post failed:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPost();
-  }, [id, navigate]);
+    if (id) {
+      fetchPost();
+    }
+  }, [id]);
 
-  // ================= DELETE =================
+  /* ================= DELETE ================= */
   const handleDelete = async () => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this post?"
+      "Delete this post?"
     );
 
     if (!confirmDelete) return;
@@ -62,100 +80,106 @@ function Post() {
       await blogService.deleteBlog(post._id);
 
       navigate("/");
-    } catch (error) {
-      console.error("DELETE ERROR:", error);
+    } catch (err) {
+      console.error("Delete failed:", err);
+      alert("Failed to delete post");
     }
   };
 
-  // ================= LOADING =================
+  /* ================= LOADING ================= */
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading post...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader />
       </div>
     );
   }
 
-  // ================= NO POST =================
+  /* ================= NO POST ================= */
   if (!post) {
     return (
       <Container>
-        <p className="text-center py-10 text-red-500">
+        <div className="py-10 text-center text-gray-500">
           Post not found
-        </p>
+        </div>
       </Container>
     );
   }
 
-  // ================= AUTHOR CHECK =================
+  /* ================= OWNER CHECK ================= */
+  const ownerId =
+    typeof post?.owner === "object"
+      ? getUserId(post.owner)
+      : post?.owner;
+
   const isAuthor =
-    currentUser?._id?.toString() ===
-    (post.owner?._id?.toString() ||
-      post.owner?.toString());
+    currentUserId &&
+    ownerId &&
+    String(currentUserId) === String(ownerId);
 
-  // ================= PLAIN TEXT FOR AI =================
-  const plainTextContent =
-    typeof post.content === "string"
-      ? post.content.replace(/<[^>]*>/g, "")
-      : "";
-
-  // ================= UI =================
   return (
     <Container>
-      <div className="max-w-5xl mx-auto py-10">
+      <div className="max-w-4xl mx-auto py-10">
 
-        {/* POST CONTENT */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        {/* POST CARD */}
+        <div className="bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100">
 
-          <PostContent post={post} />
-
-          {/* AUTHOR */}
-          <div className="mt-4 text-gray-600 text-sm">
-            By{" "}
-            <span className="font-semibold">
-              {post.owner?.username || "Unknown"}
-            </span>
-          </div>
-
-          {/* ACTIONS */}
-          <PostActions postId={post._id} />
-
-          {/* AUTHOR CONTROLS */}
-          {isAuthor && (
-            <div className="flex gap-4 mt-6">
-
-              <Link
-                to={`/posts/${post._id}/edit`}
-                className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
-              >
-                Edit Post
-              </Link>
-
-              <button
-                onClick={handleDelete}
-                className="px-5 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition"
-              >
-                Delete Post
-              </button>
-
-            </div>
+          {/* IMAGE */}
+          {post?.image && (
+            <img
+              src={post.image}
+              alt={post.title}
+              className="w-full h-[450px] object-cover"
+            />
           )}
 
-        </div>
+          {/* CONTENT */}
+          <div className="p-8">
 
-        {/* AI REVIEW */}
-        <div className="mt-8">
-          <AIReviewPanel content={plainTextContent} />
-        </div>
+            {/* AUTHOR ACTIONS */}
+            {isAuthor && (
+              <div className="flex justify-end gap-4 mb-6">
 
-        {/* COMMENTS */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mt-8">
-          <CommentSection
-            blogId={post._id}
-            currentUser={currentUser}
-          />
-        </div>
+                <Link
+                  to={`/posts/${post._id}/edit`}
+                  className="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition"
+                >
+                  Edit Post
+                </Link>
 
+                <button
+                  onClick={handleDelete}
+                  className="px-5 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition"
+                >
+                  Delete Post
+                </button>
+
+              </div>
+            )}
+
+            {/* POST CONTENT */}
+            <PostContent post={post} />
+
+            {/* LIKE BUTTON */}
+            <PostActions postId={post._id} />
+
+            {/* AI REVIEW */}
+            <AIReviewPanel
+              content={
+                post?.content
+                  ?.replace(/<[^>]*>/g, "")
+                  || ""
+              }
+            />
+
+            {/* COMMENTS */}
+            <CommentSection
+              blogId={post._id}
+              currentUser={reduxUser}
+            />
+
+          </div>
+        </div>
       </div>
     </Container>
   );
