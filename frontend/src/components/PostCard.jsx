@@ -9,22 +9,25 @@ function PostCard({ post, currentUser }) {
   const getUserId = (user) => {
     if (!user) return null;
 
-    if (user._id) return user._id;
-
-    if (user.data?._id) return user.data._id;
-
-    if (user.user?._id) return user.user._id;
-
-    return null;
+    return (
+      user?._id ||
+      user?.id ||
+      user?.data?._id ||
+      user?.user?._id ||
+      null
+    );
   };
 
+  /* ================= CURRENT USER ================= */
   const currentUserId = getUserId(currentUser);
 
+  /* ================= OWNER ID ================= */
   const ownerId =
-    typeof post.owner === "object"
-      ? post.owner?._id
-      : post.owner;
+    typeof post?.owner === "object"
+      ? getUserId(post.owner)
+      : post?.owner;
 
+  /* ================= AUTHOR CHECK ================= */
   const isAuthor =
     currentUserId &&
     ownerId &&
@@ -46,65 +49,84 @@ function PostCard({ post, currentUser }) {
       window.location.reload();
     } catch (err) {
       console.error("Delete failed:", err);
+      alert("Failed to delete post");
     }
+  };
+
+  /* ================= OPEN POST ================= */
+  const openPost = () => {
+    navigate(`/posts/${post._id}`);
   };
 
   return (
     <div
-      className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition duration-300 cursor-pointer border border-gray-100"
-      onClick={() => navigate(`/posts/${post._id}`)}
+      onClick={openPost}
+      className="group bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
     >
 
       {/* IMAGE */}
-      <div className="h-56 bg-gray-100 overflow-hidden">
-        {post.image ? (
+      <div className="relative h-56 overflow-hidden bg-gray-100">
+
+        {post?.image ? (
           <img
             src={post.image}
             alt={post.title}
-            className="w-full h-full object-cover hover:scale-105 transition duration-500"
+            className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            No Image
+          <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+            No Image Available
           </div>
         )}
+
+        {/* OVERLAY */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition duration-300" />
       </div>
 
       {/* CONTENT */}
       <div className="p-5">
 
+        {/* TITLE */}
         <h2 className="text-xl font-bold text-gray-800 line-clamp-2">
-          {post.title}
+          {post?.title || "Untitled Post"}
         </h2>
 
-        <p className="text-sm text-gray-600 mt-3 line-clamp-3 leading-6">
-          {post.content?.replace(/<[^>]+>/g, "")}
+        {/* CONTENT */}
+        <p className="mt-3 text-sm leading-6 text-gray-600 line-clamp-3">
+          {post?.content
+            ?.replace(/<[^>]*>/g, "")
+            ?.slice(0, 180) || "No content"}
         </p>
 
         {/* FOOTER */}
-        <div className="mt-5 flex items-center justify-between">
+        <div className="mt-6 flex items-center justify-between">
 
+          {/* DATE */}
           <div className="text-xs text-gray-400">
-            {new Date(post.createdAt).toLocaleDateString()}
+            {post?.createdAt
+              ? new Date(
+                  post.createdAt
+                ).toLocaleDateString()
+              : ""}
           </div>
 
-          {/* AUTHOR ACTIONS */}
+          {/* ACTIONS */}
           {isAuthor && (
             <div
-              className="flex gap-4"
+              className="flex items-center gap-4"
               onClick={(e) => e.stopPropagation()}
             >
 
               <Link
                 to={`/posts/${post._id}/edit`}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition"
               >
                 Edit
               </Link>
 
               <button
                 onClick={handleDelete}
-                className="text-red-500 hover:text-red-700 text-sm font-medium"
+                className="text-sm font-semibold text-red-500 hover:text-red-700 transition"
               >
                 Delete
               </button>
