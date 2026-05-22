@@ -1,7 +1,13 @@
 import React from "react";
 import { useForm, useWatch } from "react-hook-form";
 
-import { Button, Input, RTE, Select } from "../../components/index.js";
+import {
+  Button,
+  Input,
+  RTE,
+  Select,
+} from "../../components/index.js";
+
 import AIReviewPanel from "../Post/AIReviewPanel.jsx";
 import { blogService } from "../../api/services/blogService.js";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +17,7 @@ export default function PostForm({ post }) {
     register,
     handleSubmit,
     control,
+    watch,
   } = useForm({
     defaultValues: {
       title: post?.title || "",
@@ -21,11 +28,19 @@ export default function PostForm({ post }) {
 
   const navigate = useNavigate();
 
-  /* ================= FIX: proper RHF subscription ================= */
+  /* ================= CONTENT WATCH ================= */
   const content = useWatch({
     control,
     name: "content",
   });
+
+  /* ================= IMAGE PREVIEW ================= */
+  const imageFile = watch("image");
+
+  const imagePreview =
+    imageFile?.[0]
+      ? URL.createObjectURL(imageFile[0])
+      : post?.image || null;
 
   /* ================= SUBMIT ================= */
   const submit = async (data) => {
@@ -37,19 +52,39 @@ export default function PostForm({ post }) {
         status: data.status,
       };
 
-      const saved = post
-        ? await blogService.updateBlog(post._id, payload)
-        : await blogService.createBlog(payload);
+      let saved;
+
+      if (post) {
+        saved = await blogService.updateBlog(
+          post._id,
+          payload
+        );
+      } else {
+        saved =
+          await blogService.createBlog(
+            payload
+          );
+      }
+
+      console.log("SAVED BLOG:", saved);
 
       if (!saved?._id) {
-        console.log("DEBUG:", saved);
-        throw new Error("Blog ID missing");
+        throw new Error(
+          "Blog save failed"
+        );
       }
 
       navigate(`/posts/${saved._id}`);
     } catch (err) {
-      console.error("POST ERROR:", err);
-      alert(err.message || "Failed to save blog");
+      console.error(
+        "POST ERROR:",
+        err
+      );
+
+      alert(
+        err.message ||
+          "Failed to save blog"
+      );
     }
   };
 
@@ -61,15 +96,23 @@ export default function PostForm({ post }) {
         {/* HEADER */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6">
           <h1 className="text-3xl font-bold text-white">
-            {post ? "✏️ Update Post" : "🚀 Create New Post"}
+            {post
+              ? "✏️ Update Post"
+              : "🚀 Create New Post"}
           </h1>
+
           <p className="text-blue-100 mt-2">
             Share your ideas with the world
           </p>
         </div>
 
         {/* FORM */}
-        <form onSubmit={handleSubmit(submit)} className="p-8 space-y-8">
+        <form
+          onSubmit={handleSubmit(
+            submit
+          )}
+          className="p-8 space-y-8"
+        >
 
           {/* TITLE */}
           <div>
@@ -79,7 +122,12 @@ export default function PostForm({ post }) {
 
             <Input
               placeholder="Enter an engaging title..."
-              {...register("title", { required: true })}
+              {...register(
+                "title",
+                {
+                  required: true,
+                }
+              )}
             />
           </div>
 
@@ -90,7 +138,10 @@ export default function PostForm({ post }) {
             </label>
 
             <div className="border rounded-2xl overflow-hidden bg-white shadow-sm">
-              <RTE control={control} name="content" />
+              <RTE
+                control={control}
+                name="content"
+              />
             </div>
           </div>
 
@@ -106,7 +157,11 @@ export default function PostForm({ post }) {
                 Analyze your content using AI before publishing.
               </p>
 
-              <AIReviewPanel content={content || ""} />
+              <AIReviewPanel
+                content={
+                  content || ""
+                }
+              />
             </div>
           </div>
 
@@ -121,14 +176,32 @@ export default function PostForm({ post }) {
               <input
                 type="file"
                 accept="image/*"
-                {...register("image")}
+                {...register(
+                  "image"
+                )}
                 className="w-full text-gray-700 cursor-pointer"
               />
 
               <p className="text-sm text-gray-500 mt-2">
-                PNG, JPG, JPEG supported
+                PNG, JPG, JPEG
+                supported
               </p>
             </div>
+
+            {/* IMAGE PREVIEW */}
+            {imagePreview && (
+              <div className="mt-5">
+                <p className="font-medium text-gray-700 mb-2">
+                  Image Preview
+                </p>
+
+                <img
+                  src={imagePreview}
+                  alt="preview"
+                  className="w-full max-h-80 object-cover rounded-2xl shadow-md border"
+                />
+              </div>
+            )}
           </div>
 
           {/* STATUS */}
@@ -138,8 +211,13 @@ export default function PostForm({ post }) {
             </label>
 
             <Select
-              options={["active", "inactive"]}
-              {...register("status")}
+              options={[
+                "active",
+                "inactive",
+              ]}
+              {...register(
+                "status"
+              )}
             />
           </div>
 
@@ -149,7 +227,9 @@ export default function PostForm({ post }) {
               type="submit"
               className="w-full py-4 text-lg font-bold rounded-2xl"
             >
-              {post ? "✅ Update Post" : "📢 Publish Post"}
+              {post
+                ? "✅ Update Post"
+                : "📢 Publish Post"}
             </Button>
           </div>
 
