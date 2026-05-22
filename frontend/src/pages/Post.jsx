@@ -6,7 +6,6 @@ import { blogService } from "../api/services/blogService.js";
 
 import {
   Container,
-  Loader,
 } from "../components/index.js";
 
 import PostContent from "../components/Post/PostContent.jsx";
@@ -89,8 +88,8 @@ function Post() {
   /* ================= LOADING ================= */
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader />
+      <div className="min-h-screen flex items-center justify-center text-gray-500 text-lg">
+        Loading post...
       </div>
     );
   }
