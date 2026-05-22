@@ -173,18 +173,6 @@ function Post() {
         {/* MAIN CARD */}
         <div className="bg-white rounded-[32px] overflow-hidden border border-gray-200 shadow-xl">
 
-          {/* IMAGE */}
-          {post?.image && (
-            <div className="relative w-full h-[450px] overflow-hidden">
-              <img
-                src={post.image}
-                alt={post.title}
-                className="w-full h-full object-cover"
-              />
-
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-            </div>
-          )}
 
           {/* CONTENT AREA */}
           <div className="p-6 md:p-10">
