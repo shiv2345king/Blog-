@@ -47,16 +47,15 @@ function Post() {
       try {
         setLoading(true);
 
-        const res = await blogService.getBlogById(id);
+        // ✅ your service already returns clean blog object
+        const data = await blogService.getBlogById(id);
 
-        const data =
-          res?.data?.data ||
-          res?.data ||
-          res;
+        console.log("POST DATA:", data);
 
-        setPost(data);
+        setPost(data || null);
       } catch (err) {
         console.error("Fetch post failed:", err);
+        setPost(null);
       } finally {
         setLoading(false);
       }
@@ -95,22 +94,23 @@ function Post() {
   }
 
   /* ================= NO POST ================= */
-  if (!post) {
+  if (!post?._id) {
     return (
       <Container>
-        <div className="py-10 text-center text-gray-500">
+        <div className="py-20 text-center text-gray-500 text-lg">
           Post not found
         </div>
       </Container>
     );
   }
 
-  /* ================= OWNER CHECK ================= */
+  /* ================= OWNER ID ================= */
   const ownerId =
     typeof post?.owner === "object"
       ? getUserId(post.owner)
       : post?.owner;
 
+  /* ================= AUTHOR CHECK ================= */
   const isAuthor =
     currentUserId &&
     ownerId &&
@@ -120,7 +120,7 @@ function Post() {
     <Container>
       <div className="max-w-4xl mx-auto py-10">
 
-        {/* POST CARD */}
+        {/* POST WRAPPER */}
         <div className="bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100">
 
           {/* IMAGE */}
@@ -159,15 +159,14 @@ function Post() {
             {/* POST CONTENT */}
             <PostContent post={post} />
 
-            {/* LIKE BUTTON */}
+            {/* POST ACTIONS */}
             <PostActions postId={post._id} />
 
             {/* AI REVIEW */}
             <AIReviewPanel
               content={
                 post?.content
-                  ?.replace(/<[^>]*>/g, "")
-                  || ""
+                  ?.replace(/<[^>]*>/g, "") || ""
               }
             />
 
