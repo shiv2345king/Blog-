@@ -1,11 +1,21 @@
-import React, { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
-import { Button, Input, RTE, Select } from "../../components/index.js";
+import {
+  Button,
+  Input,
+  RTE,
+  Select,
+} from "../../components/index.js";
+
 import { blogService } from "../../api/services/blogService.js";
 import { useNavigate } from "react-router-dom";
 
 export default function PostForm({ post }) {
-  const { register, handleSubmit, control } = useForm({
+  const {
+    register,
+    handleSubmit,
+    control,
+  } = useForm({
     defaultValues: {
       title: post?.title || "",
       content: post?.content || "",
@@ -15,6 +25,7 @@ export default function PostForm({ post }) {
 
   const navigate = useNavigate();
 
+  // ================= SUBMIT =================
   const submit = async (data) => {
     try {
       const payload = {
@@ -24,47 +35,148 @@ export default function PostForm({ post }) {
         status: data.status,
       };
 
-      let res = post
-        ? await blogService.updateBlog(post._id, payload)
-        : await blogService.createBlog(payload);
+      let saved;
 
-      // 🔥 FIX: correct unwrap (CRITICAL)
-      const saved = res?.data?.data ?? res?.data ?? res;
+      if (post) {
+        saved = await blogService.updateBlog(
+          post._id,
+          payload
+        );
+      } else {
+        saved = await blogService.createBlog(
+          payload
+        );
+      }
 
-      const id = saved?._id || saved?._id?._id;
+      console.log("SAVED BLOG:", saved);
 
-      if (!id) {
-        console.log("DEBUG SAVE RESPONSE:", res);
+      if (!saved?._id) {
+        console.log("DEBUG SAVE RESPONSE:", saved);
         throw new Error("Blog ID missing");
       }
 
-      navigate(`/posts/${id}`);
+      navigate(`/posts/${saved._id}`);
     } catch (err) {
       console.error("POST ERROR:", err);
+      alert(err.message || "Failed to save blog");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-10 px-4">
 
-      <Input label="Title" {...register("title")} />
+      <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden">
 
-      <RTE control={control} name="content" />
+        {/* HEADER */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6">
+          <h1 className="text-3xl font-bold text-white">
+            {post ? "✏️ Update Post" : "🚀 Create New Post"}
+          </h1>
 
-      <input type="file" accept="image/*" {...register("image")} />
+          <p className="text-blue-100 mt-2">
+            Share your ideas with the world
+          </p>
+        </div>
 
-      {post?.image && (
-        <img
-          src={post.image}
-          className="w-full h-60 object-cover rounded"
-        />
-      )}
+        {/* FORM */}
+        <form
+          onSubmit={handleSubmit(submit)}
+          className="p-8 space-y-8"
+        >
 
-      <Select options={["active", "inactive"]} {...register("status")} />
+          {/* TITLE */}
+          <div>
+            <label className="block text-lg font-semibold text-gray-700 mb-3">
+              Post Title
+            </label>
 
-      <Button type="submit">
-        {post ? "Update Post" : "Publish"}
-      </Button>
-    </form>
+            <Input
+              placeholder="Enter an engaging title..."
+              {...register("title", {
+                required: true,
+              })}
+            />
+          </div>
+
+          {/* CONTENT */}
+          <div>
+            <label className="block text-lg font-semibold text-gray-700 mb-3">
+              Post Content
+            </label>
+
+            <div className="border rounded-2xl overflow-hidden bg-white shadow-sm">
+              <RTE
+                control={control}
+                name="content"
+              />
+            </div>
+          </div>
+
+          {/* IMAGE */}
+          <div>
+            <label className="block text-lg font-semibold text-gray-700 mb-3">
+              Upload Featured Image
+            </label>
+
+            <div className="border-2 border-dashed border-blue-300 rounded-2xl p-6 bg-blue-50 hover:bg-blue-100 transition">
+
+              <input
+                type="file"
+                accept="image/*"
+                {...register("image")}
+                className="w-full text-gray-700 cursor-pointer"
+              />
+
+              <p className="text-sm text-gray-500 mt-2">
+                PNG, JPG, JPEG supported
+              </p>
+            </div>
+          </div>
+
+          {/* EXISTING IMAGE */}
+          {post?.image && (
+            <div>
+              <label className="block text-lg font-semibold text-gray-700 mb-3">
+                Current Image
+              </label>
+
+              <img
+                src={post.image}
+                alt="Post"
+                className="w-full h-72 object-cover rounded-2xl shadow-md"
+              />
+            </div>
+          )}
+
+          {/* STATUS */}
+          <div>
+            <label className="block text-lg font-semibold text-gray-700 mb-3">
+              Post Status
+            </label>
+
+            <Select
+              options={[
+                "active",
+                "inactive",
+              ]}
+              {...register("status")}
+            />
+          </div>
+
+          {/* BUTTON */}
+          <div className="pt-4">
+            <Button
+              type="submit"
+              className="w-full py-4 text-lg font-bold rounded-2xl transition-transform hover:scale-[1.02]"
+            >
+              {post
+                ? "✅ Update Post"
+                : "📢 Publish Post"}
+            </Button>
+          </div>
+
+        </form>
+      </div>
+    </div>
   );
 }
