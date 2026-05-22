@@ -10,9 +10,25 @@ function CommentSection({ blogId, currentUser }) {
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState("");
 
+  const [likedComments, setLikedComments] = useState([]);
+
+  /* ================= SAFE USER ID ================= */
+  const getUserId = (user) => {
+    if (!user) return null;
+
+    return typeof user === "object"
+      ? user._id || user.id
+      : user;
+  };
+
+  const currentUserId = getUserId(currentUser);
+
   /* ================= FETCH COMMENTS ================= */
   useEffect(() => {
-    if (blogId) fetchComments();
+    if (blogId) {
+      fetchComments();
+      fetchLikedComments();
+    }
   }, [blogId]);
 
   const fetchComments = async () => {
@@ -21,10 +37,37 @@ function CommentSection({ blogId, currentUser }) {
 
       const res = await commentService.getComments(blogId);
 
-      // backend returns ApiResponse { data: [...] }
       const data = res?.data ?? res ?? [];
 
-      setComments(Array.isArray(data) ? data : []);
+      const commentsWithLikes = await Promise.all(
+        data.map(async (comment) => {
+          try {
+            const likeRes =
+              await commentService.getCommentLikeCount(
+                comment._id
+              );
+
+            return {
+              ...comment,
+              likeCount:
+                likeRes?.data?.likeCount ||
+                likeRes?.likeCount ||
+                0,
+            };
+          } catch {
+            return {
+              ...comment,
+              likeCount: 0,
+            };
+          }
+        })
+      );
+
+      setComments(
+        Array.isArray(commentsWithLikes)
+          ? commentsWithLikes
+          : []
+      );
     } catch (err) {
       console.error("Fetch comments error:", err);
       setComments([]);
@@ -33,11 +76,32 @@ function CommentSection({ blogId, currentUser }) {
     }
   };
 
+  /* ================= FETCH LIKED COMMENTS ================= */
+  const fetchLikedComments = async () => {
+    try {
+      const res =
+        await commentService.getLikedComments();
+
+      const liked = res?.data ?? res ?? [];
+
+      setLikedComments(
+        liked.map((l) =>
+          String(l.comment?._id)
+        )
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   /* ================= ADD COMMENT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!currentUser) return alert("Login required");
+    if (!currentUser) {
+      return alert("Login required");
+    }
+
     if (!newComment.trim()) return;
 
     try {
@@ -51,7 +115,13 @@ function CommentSection({ blogId, currentUser }) {
       const comment = res?.data ?? res;
 
       if (comment?._id) {
-        setComments((prev) => [comment, ...prev]);
+        setComments((prev) => [
+          {
+            ...comment,
+            likeCount: 0,
+          },
+          ...prev,
+        ]);
       }
 
       setNewComment("");
@@ -64,11 +134,16 @@ function CommentSection({ blogId, currentUser }) {
 
   /* ================= DELETE ================= */
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete comment?")) return;
+    if (!window.confirm("Delete comment?")) {
+      return;
+    }
 
     try {
       await commentService.deleteComment(id);
-      setComments((prev) => prev.filter((c) => c._id !== id));
+
+      setComments((prev) =>
+        prev.filter((c) => c._id !== id)
+      );
     } catch (err) {
       console.error("Delete comment error:", err);
     }
@@ -79,10 +154,11 @@ function CommentSection({ blogId, currentUser }) {
     if (!editContent.trim()) return;
 
     try {
-      const res = await commentService.updateComment(
-        id,
-        editContent.trim()
-      );
+      const res =
+        await commentService.updateComment(
+          id,
+          editContent.trim()
+        );
 
       const updated = res?.data ?? res;
 
@@ -91,7 +167,9 @@ function CommentSection({ blogId, currentUser }) {
           c._id === id
             ? {
                 ...c,
-                content: updated?.content || editContent,
+                content:
+                  updated?.content ||
+                  editContent,
               }
             : c
         )
@@ -104,121 +182,239 @@ function CommentSection({ blogId, currentUser }) {
     }
   };
 
-  /* ================= SAFE USER ID ================= */
-  const getUserId = (user) => {
-    if (!user) return null;
-    return typeof user === "object"
-      ? user._id || user.id
-      : user;
+  /* ================= LIKE / UNLIKE ================= */
+  const handleLike = async (commentId) => {
+    try {
+      const isLiked =
+        likedComments.includes(commentId);
+
+      if (isLiked) {
+        await commentService.unlikeComment(
+          commentId
+        );
+
+        setLikedComments((prev) =>
+          prev.filter(
+            (id) => id !== commentId
+          )
+        );
+
+        setComments((prev) =>
+          prev.map((c) =>
+            c._id === commentId
+              ? {
+                  ...c,
+                  likeCount:
+                    (c.likeCount || 1) - 1,
+                }
+              : c
+          )
+        );
+      } else {
+        await commentService.likeComment(
+          commentId
+        );
+
+        setLikedComments((prev) => [
+          ...prev,
+          commentId,
+        ]);
+
+        setComments((prev) =>
+          prev.map((c) =>
+            c._id === commentId
+              ? {
+                  ...c,
+                  likeCount:
+                    (c.likeCount || 0) + 1,
+                }
+              : c
+          )
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const currentUserId = getUserId(currentUser);
-
   /* ================= LOADING ================= */
-  if (loading) return <div className="p-4">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-gray-500">
+        Loading comments...
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-10">
-      <h2 className="text-xl font-bold mb-4">
+    <div className="mt-12">
+      <h2 className="text-2xl font-bold mb-6">
         Comments ({comments.length})
       </h2>
 
       {/* INPUT */}
       {currentUser ? (
-        <form onSubmit={handleSubmit} className="mb-6">
+        <form
+          onSubmit={handleSubmit}
+          className="mb-8"
+        >
           <textarea
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            className="w-full border p-3 rounded"
+            onChange={(e) =>
+              setNewComment(e.target.value)
+            }
+            className="w-full border border-gray-300 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Write a comment..."
           />
 
           <button
             disabled={submitting}
-            className="mt-2 bg-blue-600 text-white px-4 py-2 rounded"
+            className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl transition"
           >
-            {submitting ? "Posting..." : "Post Comment"}
+            {submitting
+              ? "Posting..."
+              : "Post Comment"}
           </button>
         </form>
       ) : (
-        <p className="text-gray-500">Login to comment</p>
+        <p className="text-gray-500">
+          Login to comment
+        </p>
       )}
 
       {/* COMMENTS */}
-      {comments.map((c) => {
-        const commentUserId = getUserId(c.user);
+      <div className="space-y-5">
+        {comments.map((c) => {
+          const commentUserId =
+            getUserId(c.user);
 
-        const isAuthor =
-          currentUserId &&
-          commentUserId &&
-          String(currentUserId) === String(commentUserId);
+          const isAuthor =
+            currentUserId &&
+            commentUserId &&
+            String(currentUserId) ===
+              String(commentUserId);
 
-        return (
-          <div key={c._id} className="border p-4 mb-3 rounded">
+          const isLiked =
+            likedComments.includes(c._id);
 
-            {/* USER */}
-            <div className="text-sm font-semibold">
-              {c.user?.username || "User"}
-            </div>
+          return (
+            <div
+              key={c._id}
+              className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition"
+            >
 
-            {/* EDIT MODE */}
-            {editingId === c._id ? (
-              <>
-                <textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full border p-2 mt-2"
-                />
+              {/* HEADER */}
+              <div className="flex justify-between items-start">
 
-                <div className="flex gap-3 mt-2">
-                  <button
-                    onClick={() => handleUpdate(c._id)}
-                    className="text-green-600"
-                  >
-                    Save
-                  </button>
+                <div>
+                  <h3 className="font-semibold text-gray-800">
+                    {c.user?.username ||
+                      "User"}
+                  </h3>
 
-                  <button
-                    onClick={() => {
-                      setEditingId(null);
-                      setEditContent("");
-                    }}
-                    className="text-gray-500"
-                  >
-                    Cancel
-                  </button>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {new Date(
+                      c.createdAt
+                    ).toLocaleString()}
+                  </p>
                 </div>
-              </>
-            ) : (
-              <>
-                <p className="mt-2">{c.content}</p>
 
-                {/* EDIT/DELETE */}
+                {/* AUTHOR ACTIONS */}
                 {isAuthor && (
-                  <div className="flex gap-3 text-sm mt-2">
+                  <div className="flex gap-3 text-sm">
+
                     <button
                       onClick={() => {
                         setEditingId(c._id);
-                        setEditContent(c.content);
+                        setEditContent(
+                          c.content
+                        );
                       }}
-                      className="text-blue-600"
+                      className="text-blue-600 hover:text-blue-800"
                     >
                       Edit
                     </button>
 
                     <button
-                      onClick={() => handleDelete(c._id)}
-                      className="text-red-500"
+                      onClick={() =>
+                        handleDelete(c._id)
+                      }
+                      className="text-red-500 hover:text-red-700"
                     >
                       Delete
                     </button>
+
                   </div>
                 )}
-              </>
-            )}
-          </div>
-        );
-      })}
+              </div>
+
+              {/* EDIT MODE */}
+              {editingId === c._id ? (
+                <div className="mt-4">
+
+                  <textarea
+                    value={editContent}
+                    onChange={(e) =>
+                      setEditContent(
+                        e.target.value
+                      )
+                    }
+                    className="w-full border rounded-xl p-3"
+                  />
+
+                  <div className="flex gap-3 mt-3">
+
+                    <button
+                      onClick={() =>
+                        handleUpdate(c._id)
+                      }
+                      className="bg-green-500 text-white px-4 py-2 rounded-lg"
+                    >
+                      Save
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setEditingId(null);
+                        setEditContent("");
+                      }}
+                      className="bg-gray-300 px-4 py-2 rounded-lg"
+                    >
+                      Cancel
+                    </button>
+
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* CONTENT */}
+                  <p className="mt-4 text-gray-700 leading-7">
+                    {c.content}
+                  </p>
+
+                  {/* ACTIONS */}
+                  <div className="mt-5 flex items-center gap-4">
+
+                    <button
+                      onClick={() =>
+                        handleLike(c._id)
+                      }
+                      className={`px-4 py-2 rounded-full text-sm transition ${
+                        isLiked
+                          ? "bg-red-100 text-red-600"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      ❤️ {c.likeCount || 0}
+                    </button>
+
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
