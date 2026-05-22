@@ -1,5 +1,6 @@
 import React from "react";
 import { useForm } from "react-hook-form";
+
 import {
   Button,
   Input,
@@ -7,14 +8,19 @@ import {
   Select,
 } from "../../components/index.js";
 
+import AIReviewPanel from "../Post/AIReviewPanel.jsx";
+
 import { blogService } from "../../api/services/blogService.js";
+
 import { useNavigate } from "react-router-dom";
 
 export default function PostForm({ post }) {
+
   const {
     register,
     handleSubmit,
     control,
+    watch,
   } = useForm({
     defaultValues: {
       title: post?.title || "",
@@ -25,7 +31,10 @@ export default function PostForm({ post }) {
 
   const navigate = useNavigate();
 
-  // ================= SUBMIT =================
+  /* ================= WATCH CONTENT ================= */
+  const content = watch("content");
+
+  /* ================= SUBMIT ================= */
   const submit = async (data) => {
     try {
       const payload = {
@@ -38,27 +47,47 @@ export default function PostForm({ post }) {
       let saved;
 
       if (post) {
-        saved = await blogService.updateBlog(
-          post._id,
-          payload
-        );
+        saved =
+          await blogService.updateBlog(
+            post._id,
+            payload
+          );
       } else {
-        saved = await blogService.createBlog(
-          payload
-        );
+        saved =
+          await blogService.createBlog(
+            payload
+          );
       }
 
-      console.log("SAVED BLOG:", saved);
+      console.log(
+        "SAVED BLOG:",
+        saved
+      );
 
       if (!saved?._id) {
-        console.log("DEBUG SAVE RESPONSE:", saved);
-        throw new Error("Blog ID missing");
+        console.log(
+          "DEBUG SAVE RESPONSE:",
+          saved
+        );
+
+        throw new Error(
+          "Blog ID missing"
+        );
       }
 
-      navigate(`/posts/${saved._id}`);
+      navigate(
+        `/posts/${saved._id}`
+      );
     } catch (err) {
-      console.error("POST ERROR:", err);
-      alert(err.message || "Failed to save blog");
+      console.error(
+        "POST ERROR:",
+        err
+      );
+
+      alert(
+        err.message ||
+          "Failed to save blog"
+      );
     }
   };
 
@@ -69,23 +98,31 @@ export default function PostForm({ post }) {
 
         {/* HEADER */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6">
+
           <h1 className="text-3xl font-bold text-white">
-            {post ? "✏️ Update Post" : "🚀 Create New Post"}
+            {post
+              ? "✏️ Update Post"
+              : "🚀 Create New Post"}
           </h1>
 
           <p className="text-blue-100 mt-2">
-            Share your ideas with the world
+            Share your ideas with
+            the world
           </p>
+
         </div>
 
         {/* FORM */}
         <form
-          onSubmit={handleSubmit(submit)}
+          onSubmit={handleSubmit(
+            submit
+          )}
           className="p-8 space-y-8"
         >
 
           {/* TITLE */}
           <div>
+
             <label className="block text-lg font-semibold text-gray-700 mb-3">
               Post Title
             </label>
@@ -96,24 +133,53 @@ export default function PostForm({ post }) {
                 required: true,
               })}
             />
+
           </div>
 
           {/* CONTENT */}
           <div>
+
             <label className="block text-lg font-semibold text-gray-700 mb-3">
               Post Content
             </label>
 
             <div className="border rounded-2xl overflow-hidden bg-white shadow-sm">
+
               <RTE
                 control={control}
                 name="content"
               />
+
             </div>
+
+          </div>
+
+          {/* AI REVIEW */}
+          <div>
+
+            <label className="block text-lg font-semibold text-gray-700 mb-3">
+              AI Content Review
+            </label>
+
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-5">
+
+              <p className="text-sm text-gray-600 mb-4">
+                Analyze your content
+                using AI before
+                publishing.
+              </p>
+
+              <AIReviewPanel
+                content={content}
+              />
+
+            </div>
+
           </div>
 
           {/* IMAGE */}
           <div>
+
             <label className="block text-lg font-semibold text-gray-700 mb-3">
               Upload Featured Image
             </label>
@@ -128,14 +194,18 @@ export default function PostForm({ post }) {
               />
 
               <p className="text-sm text-gray-500 mt-2">
-                PNG, JPG, JPEG supported
+                PNG, JPG, JPEG
+                supported
               </p>
+
             </div>
+
           </div>
 
           {/* EXISTING IMAGE */}
           {post?.image && (
             <div>
+
               <label className="block text-lg font-semibold text-gray-700 mb-3">
                 Current Image
               </label>
@@ -145,11 +215,13 @@ export default function PostForm({ post }) {
                 alt="Post"
                 className="w-full h-72 object-cover rounded-2xl shadow-md"
               />
+
             </div>
           )}
 
           {/* STATUS */}
           <div>
+
             <label className="block text-lg font-semibold text-gray-700 mb-3">
               Post Status
             </label>
@@ -161,10 +233,12 @@ export default function PostForm({ post }) {
               ]}
               {...register("status")}
             />
+
           </div>
 
           {/* BUTTON */}
           <div className="pt-4">
+
             <Button
               type="submit"
               className="w-full py-4 text-lg font-bold rounded-2xl transition-transform hover:scale-[1.02]"
@@ -173,6 +247,7 @@ export default function PostForm({ post }) {
                 ? "✅ Update Post"
                 : "📢 Publish Post"}
             </Button>
+
           </div>
 
         </form>

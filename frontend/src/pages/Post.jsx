@@ -9,7 +9,6 @@ import { Container } from "../components/index.js";
 import PostContent from "../components/Post/PostContent.jsx";
 import PostActions from "../components/Post/PostActions.jsx";
 import CommentSection from "../components/Post/CommentSection.jsx";
-import AIReviewPanel from "../components/Post/AIReviewPanel.jsx";
 
 function Post() {
   const { id } = useParams();
