@@ -15,9 +15,7 @@ function MyPosts() {
 
         console.log("RAW MY POSTS:", res);
 
-        const blogs = Array.isArray(res) ? res : res?.data ?? [];
-
-        setPosts(blogs);
+        setPosts(Array.isArray(res) ? res : []);
       } catch (err) {
         console.error("MY POSTS ERROR:", err);
         setPosts([]);

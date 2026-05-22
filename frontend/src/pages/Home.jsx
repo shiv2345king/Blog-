@@ -12,17 +12,18 @@ function Home() {
       try {
         setLoading(true);
 
-        const response = await blogService.getAllBlogs();
+        // ✅ get clean array directly from service
+        const postsData = await blogService.getAllBlogs();
 
-        const postsData =
-          response?.data ||
-          response?.posts ||
-          response ||
-          [];
+        console.log("HOME POSTS:", postsData);
 
         setPosts(Array.isArray(postsData) ? postsData : []);
 
-        const user = JSON.parse(localStorage.getItem("user") || "null");
+        // ✅ load current user
+        const user = JSON.parse(
+          localStorage.getItem("user") || "null"
+        );
+
         setCurrentUser(user);
       } catch (error) {
         console.error("Error fetching posts:", error);
@@ -35,6 +36,7 @@ function Home() {
     fetchData();
   }, []);
 
+  // ================= LOADING =================
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -43,14 +45,18 @@ function Home() {
     );
   }
 
+  // ================= EMPTY STATE =================
   if (!posts.length) {
     return (
       <Container>
-        <p className="text-center py-10">No posts available</p>
+        <p className="text-center py-10 text-gray-500">
+          No posts available
+        </p>
       </Container>
     );
   }
 
+  // ================= UI =================
   return (
     <div className="w-full py-8">
       <Container>

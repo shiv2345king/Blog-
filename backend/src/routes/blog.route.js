@@ -21,13 +21,15 @@ const router = Router();
 router.get("/", getAllBlogs);
 
 /* ================= PROTECTED READ ROUTES ================= */
-router.get("/my", verifyJwt, getMyBlogs);
-router.get("/liked", verifyJwt, getLikedBlogs);
+router.get("/my", verifyJwt, getMyBlogs);        // ✅ Must come first
+router.get("/liked", verifyJwt, getLikedBlogs);  // ✅ Must come first
 
 /* ================= STATS / FEEDBACK ================= */
 router.get("/:id/stats", getBlogStats);
 router.get("/:id/feedback", getBlogFeedback);
-router.get("/:id", getBlogById);
+
+/* ================= CATCH-ALL ID ROUTE (LAST) ================= */
+router.get("/:id", getBlogById);                 // ✅ Must be last
 
 /* ================= MUTATIONS ================= */
 router.post("/", verifyJwt, upload.single("image"), createBlog);

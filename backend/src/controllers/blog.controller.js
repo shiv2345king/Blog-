@@ -8,37 +8,44 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 /* ================= CREATE BLOG ================= */
-export const createBlog = asyncHandler(async (req, res) => {
-  const { title, content } = req.body;
+export const createBlog = async (req, res) => {
+  try {
+    const { title, content, status } = req.body;
 
-  if (!title || !content) {
-    throw new ApiErrors(400, "Title and Content are required");
+    let imageUrl = null;
+
+    if (req.file) {
+      const uploadResult = await uploadOnCloudinary(req.file.buffer);
+      
+      if (!uploadResult?.secure_url) {
+        return res.status(500).json({
+          success: false,
+          message: "Image upload failed"
+        });
+      }
+
+      imageUrl = uploadResult.secure_url; // ✅ CRITICAL: Extract URL
+    }
+
+    const blog = await Blog.create({
+      title,
+      content,
+      image: imageUrl,  // ✅ Save the URL, not the file object
+      status,
+      owner: req.user._id,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: blog,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
-
-  const imageLocalPath = req.file?.path || req.files?.image?.[0]?.path;
-
-  if (!imageLocalPath) {
-    throw new ApiErrors(400, "Image is required");
-  }
-
-  const uploaded = await uploadOnCloudinary(imageLocalPath);
-
-  if (!uploaded?.secure_url) {
-    throw new ApiErrors(500, "Image upload failed");
-  }
-
-  const blog = await Blog.create({
-    title,
-    content,
-    image: uploaded.secure_url,
-    owner: req.user._id,
-  });
-
-  return res.status(201).json({
-    success: true,
-    data: blog,
-  });
-});
+};
 
 /* ================= GET ALL BLOGS ================= */
 export const getAllBlogs = asyncHandler(async (req, res) => {
@@ -117,18 +124,15 @@ export const updateBlog = asyncHandler(async (req, res) => {
   if (title) blog.title = title;
   if (content) blog.content = content;
 
-  // 🔥 FIX: handle both multer formats
-  const imagePath = req.file?.path || req.files?.image?.[0]?.path;
+ if (req.file) {
+  const uploaded = await uploadOnCloudinary(req.file.buffer);
 
-  if (imagePath) {
-    const uploaded = await uploadOnCloudinary(imagePath);
-
-    if (!uploaded?.secure_url) {
-      throw new ApiErrors(500, "Image upload failed");
-    }
-
-    blog.image = uploaded.secure_url;
+  if (!uploaded?.secure_url) {
+    throw new ApiErrors(500, "Image upload failed");
   }
+
+  blog.image = uploaded.secure_url;
+}
 
   await blog.save();
 

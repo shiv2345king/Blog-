@@ -3,7 +3,12 @@ import apiCall from "../apiConfig.js";
 /* ================= SAFE UNWRAP ================= */
 const unwrap = (res) => {
   if (!res) return null;
-  return res.data ?? res;
+
+  // axios/fetch wrapper
+  const payload = res.data ?? res;
+
+  // your API response shape
+  return payload.data ?? payload;
 };
 
 export const blogService = {
@@ -63,11 +68,9 @@ export const blogService = {
 
   /* ================= MY BLOGS (FIXED - MAIN BUG) ================= */
   getMyBlogs: async () => {
-    const res = await apiCall("/blogs/my");
-    const data = unwrap(res);
-
-    return Array.isArray(data) ? data : [];
-  },
+  const res = await apiCall("/blogs/my");
+  return unwrap(res) || [];
+},
 
   /* ================= BLOG STATS ================= */
   getBlogStats: async (id) => {
