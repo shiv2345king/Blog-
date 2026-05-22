@@ -16,9 +16,16 @@ function CommentSection({ blogId, currentUser }) {
   const getUserId = (user) => {
     if (!user) return null;
 
-    return typeof user === "object"
-      ? user._id || user.id
-      : user;
+    // direct _id
+    if (user._id) return user._id;
+
+    // nested data
+    if (user.data?._id) return user.data._id;
+
+    // nested user
+    if (user.user?._id) return user.user._id;
+
+    return null;
   };
 
   const currentUserId = getUserId(currentUser);
@@ -37,7 +44,9 @@ function CommentSection({ blogId, currentUser }) {
 
       const res = await commentService.getComments(blogId);
 
-      const data = res?.data ?? res ?? [];
+      const data = Array.isArray(res)
+        ? res
+        : res?.data || [];
 
       const commentsWithLikes = await Promise.all(
         data.map(async (comment) => {
@@ -63,11 +72,7 @@ function CommentSection({ blogId, currentUser }) {
         })
       );
 
-      setComments(
-        Array.isArray(commentsWithLikes)
-          ? commentsWithLikes
-          : []
-      );
+      setComments(commentsWithLikes);
     } catch (err) {
       console.error("Fetch comments error:", err);
       setComments([]);
@@ -82,15 +87,22 @@ function CommentSection({ blogId, currentUser }) {
       const res =
         await commentService.getLikedComments();
 
-      const liked = res?.data ?? res ?? [];
+      const liked = Array.isArray(res)
+        ? res
+        : res?.data || [];
 
       setLikedComments(
         liked.map((l) =>
-          String(l.comment?._id)
+          String(
+            l.comment?._id || l.comment
+          )
         )
       );
     } catch (err) {
-      console.error(err);
+      console.error(
+        "Fetch liked comments error:",
+        err
+      );
     }
   };
 
@@ -107,12 +119,14 @@ function CommentSection({ blogId, currentUser }) {
     try {
       setSubmitting(true);
 
-      const res = await commentService.addComment(
-        blogId,
-        newComment.trim()
-      );
+      const res =
+        await commentService.addComment(
+          blogId,
+          newComment.trim()
+        );
 
-      const comment = res?.data ?? res;
+      const comment =
+        res?.data || res;
 
       if (comment?._id) {
         setComments((prev) => [
@@ -126,7 +140,10 @@ function CommentSection({ blogId, currentUser }) {
 
       setNewComment("");
     } catch (err) {
-      console.error("Add comment error:", err);
+      console.error(
+        "Add comment error:",
+        err
+      );
     } finally {
       setSubmitting(false);
     }
@@ -145,7 +162,10 @@ function CommentSection({ blogId, currentUser }) {
         prev.filter((c) => c._id !== id)
       );
     } catch (err) {
-      console.error("Delete comment error:", err);
+      console.error(
+        "Delete comment error:",
+        err
+      );
     }
   };
 
@@ -160,7 +180,8 @@ function CommentSection({ blogId, currentUser }) {
           editContent.trim()
         );
 
-      const updated = res?.data ?? res;
+      const updated =
+        res?.data || res;
 
       setComments((prev) =>
         prev.map((c) =>
@@ -178,7 +199,10 @@ function CommentSection({ blogId, currentUser }) {
       setEditingId(null);
       setEditContent("");
     } catch (err) {
-      console.error("Update comment error:", err);
+      console.error(
+        "Update comment error:",
+        err
+      );
     }
   };
 
@@ -186,7 +210,9 @@ function CommentSection({ blogId, currentUser }) {
   const handleLike = async (commentId) => {
     try {
       const isLiked =
-        likedComments.includes(commentId);
+        likedComments.includes(
+          String(commentId)
+        );
 
       if (isLiked) {
         await commentService.unlikeComment(
@@ -195,7 +221,9 @@ function CommentSection({ blogId, currentUser }) {
 
         setLikedComments((prev) =>
           prev.filter(
-            (id) => id !== commentId
+            (id) =>
+              String(id) !==
+              String(commentId)
           )
         );
 
@@ -217,7 +245,7 @@ function CommentSection({ blogId, currentUser }) {
 
         setLikedComments((prev) => [
           ...prev,
-          commentId,
+          String(commentId),
         ]);
 
         setComments((prev) =>
@@ -233,7 +261,10 @@ function CommentSection({ blogId, currentUser }) {
         );
       }
     } catch (err) {
-      console.error(err);
+      console.error(
+        "Comment like error:",
+        err
+      );
     }
   };
 
@@ -289,23 +320,21 @@ function CommentSection({ blogId, currentUser }) {
             getUserId(c.user);
 
           const isAuthor =
-            currentUserId &&
-            commentUserId &&
             String(currentUserId) ===
-              String(commentUserId);
+            String(commentUserId);
 
           const isLiked =
-            likedComments.includes(c._id);
+            likedComments.includes(
+              String(c._id)
+            );
 
           return (
             <div
               key={c._id}
               className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition"
             >
-
               {/* HEADER */}
               <div className="flex justify-between items-start">
-
                 <div>
                   <h3 className="font-semibold text-gray-800">
                     {c.user?.username ||
@@ -321,8 +350,7 @@ function CommentSection({ blogId, currentUser }) {
 
                 {/* AUTHOR ACTIONS */}
                 {isAuthor && (
-                  <div className="flex gap-3 text-sm">
-
+                  <div className="flex gap-4 text-sm">
                     <button
                       onClick={() => {
                         setEditingId(c._id);
@@ -330,7 +358,7 @@ function CommentSection({ blogId, currentUser }) {
                           c.content
                         );
                       }}
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-blue-600 hover:text-blue-800 font-medium"
                     >
                       Edit
                     </button>
@@ -339,11 +367,10 @@ function CommentSection({ blogId, currentUser }) {
                       onClick={() =>
                         handleDelete(c._id)
                       }
-                      className="text-red-500 hover:text-red-700"
+                      className="text-red-500 hover:text-red-700 font-medium"
                     >
                       Delete
                     </button>
-
                   </div>
                 )}
               </div>
@@ -351,7 +378,6 @@ function CommentSection({ blogId, currentUser }) {
               {/* EDIT MODE */}
               {editingId === c._id ? (
                 <div className="mt-4">
-
                   <textarea
                     value={editContent}
                     onChange={(e) =>
@@ -363,7 +389,6 @@ function CommentSection({ blogId, currentUser }) {
                   />
 
                   <div className="flex gap-3 mt-3">
-
                     <button
                       onClick={() =>
                         handleUpdate(c._id)
@@ -382,7 +407,6 @@ function CommentSection({ blogId, currentUser }) {
                     >
                       Cancel
                     </button>
-
                   </div>
                 </div>
               ) : (
@@ -394,7 +418,6 @@ function CommentSection({ blogId, currentUser }) {
 
                   {/* ACTIONS */}
                   <div className="mt-5 flex items-center gap-4">
-
                     <button
                       onClick={() =>
                         handleLike(c._id)
@@ -407,7 +430,6 @@ function CommentSection({ blogId, currentUser }) {
                     >
                       ❤️ {c.likeCount || 0}
                     </button>
-
                   </div>
                 </>
               )}
