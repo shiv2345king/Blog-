@@ -12,26 +12,31 @@ function Login() {
   const navigate = useNavigate()
   const { register, handleSubmit } = useForm()
   const [error, setError] = useState("")
+const login = async (data) => {
+  setError("");
 
-  const login = async (data) => {
-    setError("")
+  try {
+    const res = await userService.login(data);
 
-    try {
-      const res = await userService.login(data)
-
-      const user = res?.data?.user
-
-      if (user) {
-        dispatch(userLogin({ user }))
-        navigate("/")
-      } else {
-        setError("Invalid response from server")
-      }
-
-    } catch (error) {
-      setError(error.message || "Login failed")
+    if (!res.success) {
+      setError(res.error || "Login failed");
+      return;
     }
+
+    const user = res.data?.user;
+
+    if (!user) {
+      setError("Invalid response from server");
+      return;
+    }
+
+    dispatch(userLogin({ user }));
+    navigate("/");
+
+  } catch (error) {
+    setError(error.message || "Login failed");
   }
+};
 
   return (
     <div
