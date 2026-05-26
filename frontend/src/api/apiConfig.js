@@ -1,6 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://blog-qifu.onrender.com/api";
+  import.meta.env.VITE_API_URL || "https://blog-qifu.onrender.com/api";
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -20,13 +19,26 @@ const safeJson = async (response) => {
   }
 };
 
-/* ================= MAIN API CALL ================= */
+const getErrorMessage = (data, status) => {
+  if (status === 401) return "Invalid email or password";
+  if (status === 409) return data?.message || "Email or username already exists";
+  if (status === 400) return data?.message || "Invalid request";
+
+  return (
+    data?.message ||
+    data?.error ||
+    data?.data?.message ||
+    data?.errors?.[0]?.message ||
+    `Request failed with status ${status}`
+  );
+};
+
 const apiCall = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const config = {
     method: options.method || "GET",
-    credentials: "include", // REQUIRED for cookies/auth
+    credentials: "include",
     ...options,
     headers: {
       ...(options.body instanceof FormData
@@ -44,7 +56,6 @@ const apiCall = async (endpoint, options = {}) => {
       endpoint.includes("/register") ||
       endpoint.includes("/refresh-token");
 
-    /* ================= 401 HANDLING ================= */
     if (response.status === 401 && !isAuthEndpoint) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -55,13 +66,10 @@ const apiCall = async (endpoint, options = {}) => {
       isRefreshing = true;
 
       try {
-        const refreshRes = await fetch(
-          `${API_BASE_URL}/users/refresh-token`,
-          {
-            method: "POST",
-            credentials: "include",
-          }
-        );
+        const refreshRes = await fetch(`${API_BASE_URL}/users/refresh-token`, {
+          method: "POST",
+          credentials: "include",
+        });
 
         if (!refreshRes.ok) {
           throw new Error("Refresh failed");
@@ -75,42 +83,37 @@ const apiCall = async (endpoint, options = {}) => {
         processQueue(err);
         isRefreshing = false;
 
-        return { error: "SESSION_EXPIRED" };
+        return {
+          success: false,
+          error: "Session expired. Please login again.",
+          status: 401,
+        };
       }
     }
 
     const data = await safeJson(response);
 
-    /* ================= ERROR RESPONSE ================= */
-     if (!response.ok) {
-  console.log("FULL ERROR RESPONSE:", data);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: getErrorMessage(data, response.status),
+        status: response.status,
+      };
+    }
 
-  return {
-    success: false,
-    error:
-      data?.message ||
-      data?.error ||
-      data?.data?.message ||
-      data?.errors?.[0]?.message ||
-      `Request failed with status ${response.status}`,
-    status: response.status,
-  };
-}
-
-    /* ================= NORMALIZE RESPONSE =================
-       ALWAYS RETURN:
-       { success, data }
-    ===================================================== */
     return {
       success: true,
       data: data?.data ?? data,
+      message: data?.message,
+      status: response.status,
     };
   } catch (error) {
     console.error("API Error:", error);
 
     return {
       success: false,
-      error: "NETWORK_ERROR",
+      error: "Network error. Please try again.",
+      status: 0,
     };
   }
 };
