@@ -30,29 +30,21 @@ function SignUp() {
       // ---------- REGISTER ----------
       const registerRes = await userService.register(formData);
 
-      if (!registerRes) {
-  setError("Registration failed");
+   
+    if (!registerRes.success) {
+  setError(registerRes.error || "Registration failed");
   return;
 }
 
-      // ---------- LOGIN ----------
-      const loginRes = await userService.login({
-        email: data.email,
-        password: data.password,
-      });
+const user = registerRes.data?.user;
 
-      const loggedInUser =
-        loginRes?.data?.user ||
-        loginRes?.user ||
-        loginRes?.data?.data?.user;
+if (!user) {
+  setError("Invalid registration response");
+  return;
+}
 
-      if (!loggedInUser) {
-        setError("Login after signup failed");
-        return;
-      }
-
-      dispatch(userLogin({ user: loggedInUser }));
-      navigate("/");
+dispatch(userLogin({ user }));
+navigate("/");
 
     } catch (err) {
   console.error("Signup error:", err);
