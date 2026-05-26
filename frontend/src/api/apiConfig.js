@@ -82,13 +82,20 @@ const apiCall = async (endpoint, options = {}) => {
     const data = await safeJson(response);
 
     /* ================= ERROR RESPONSE ================= */
-    if (!response.ok) {
-      return {
-        success: false,
-        error: data?.message || "REQUEST_FAILED",
-        status: response.status,
-      };
-    }
+     if (!response.ok) {
+  console.log("FULL ERROR RESPONSE:", data);
+
+  return {
+    success: false,
+    error:
+      data?.message ||
+      data?.error ||
+      data?.data?.message ||
+      data?.errors?.[0]?.message ||
+      `Request failed with status ${response.status}`,
+    status: response.status,
+  };
+}
 
     /* ================= NORMALIZE RESPONSE =================
        ALWAYS RETURN:
