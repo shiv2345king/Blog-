@@ -7,57 +7,41 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import bg from "../assets/bg.jpg";
 
-function SignUp() {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { register, handleSubmit } = useForm();
-  const [error, setError] = useState("");
+const SignUp = async (data) => {
+  setError("");
 
-  const signUp = async (data) => {
-    setError("");
+  try {
+    const formData = new FormData();
+    formData.append("fullName", data.fullName);
+    formData.append("email", data.email);
+    formData.append("username", data.username);
+    formData.append("password", data.password);
 
-    try {
-      const formData = new FormData();
-      formData.append("fullName", data.fullName);
-      formData.append("email", data.email);
-      formData.append("username", data.username);
-      formData.append("password", data.password);
+    if (data.avatar?.[0]) {
+      formData.append("avatar", data.avatar[0]);
+    }
 
-      if (data.avatar?.[0]) {
-        formData.append("avatar", data.avatar[0]);
-      }
+    const registerRes = await userService.register(formData);
 
-      // ---------- REGISTER ----------
-      const registerRes = await userService.register(formData);
-
-   
     if (!registerRes.success) {
-  setError(registerRes.error || "Registration failed");
-  return;
-}
+      setError(registerRes.error || "Registration failed");
+      return;
+    }
 
-const user = registerRes.data?.user;
+    const user = registerRes.data?.user;
 
-if (!user) {
-  setError("Invalid registration response");
-  return;
-}
+    if (!user) {
+      setError("Invalid registration response");
+      return;
+    }
 
-dispatch(userLogin({ user }));
-navigate("/");
-
-    } catch (err) {
-  console.error("Signup error:", err);
-
-  setError(
-    err?.response?.data?.message ||
-    err?.response?.data?.error ||
-    err?.response?.data ||
-    "Registration failed"
-  );
-  };
-}
-
+    dispatch(userLogin({ user }));
+    navigate("/");
+  } catch (err) {
+    console.error("Signup error:", err);
+    setError(err?.message || "Registration failed");
+  }
+};
   return (
     <div
       className="flex items-center justify-center min-h-screen w-full bg-cover bg-center relative"
@@ -103,6 +87,6 @@ navigate("/");
       </div>
     </div>
   );
-}
+
 
 export default SignUp;
