@@ -30,15 +30,10 @@ function SignUp() {
       // ---------- REGISTER ----------
       const registerRes = await userService.register(formData);
 
-      const registeredUser =
-        registerRes?.data?.user ||
-        registerRes?.user ||
-        registerRes?.data?.data?.user;
-
-      if (!registeredUser) {
-        setError("Registration failed");
-        return;
-      }
+      if (!registerRes) {
+  setError("Registration failed");
+  return;
+}
 
       // ---------- LOGIN ----------
       const loginRes = await userService.login({
