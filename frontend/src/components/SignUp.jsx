@@ -60,10 +60,16 @@ function SignUp() {
       navigate("/");
 
     } catch (err) {
-      console.error(err);
-      setError(err?.message || "Something went wrong");
-    }
+  console.error("Signup error:", err);
+
+  setError(
+    err?.response?.data?.message ||
+    err?.response?.data?.error ||
+    err?.response?.data ||
+    "Registration failed"
+  );
   };
+}
 
   return (
     <div
