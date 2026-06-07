@@ -57,6 +57,12 @@ router.post(
 router.post("/login", loginUser);
 router.post("/refresh-token", refreshAccessToken);
 
+router.get("/auth/google-test", (req, res) => {
+  res.json({
+    routeWorking: true,
+    scope: ["profile", "email"],
+  });
+});
 //protected routes
 router.use(verifyJwt);
 
