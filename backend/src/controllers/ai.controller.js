@@ -1,5 +1,5 @@
 import { reviewBlogContent } from "../services/gemini.services.js";
-console.log("ENV KEY:", process.env.GEMINI_API_KEY);
+
 
 export const reviewBlog = async (req, res) => {
     try {
