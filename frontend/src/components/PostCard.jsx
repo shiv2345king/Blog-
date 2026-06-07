@@ -11,7 +11,7 @@ function PostCard({
 }) {
   const navigate = useNavigate();
 
-  /* ================= SAFE USER ID ================= */
+  //safe user id getter
   const getUserId = (user) => {
     if (!user) return null;
 
@@ -24,33 +24,25 @@ function PostCard({
     );
   };
 
-  /* ================= CURRENT USER ================= */
+  //safe current user id
   const currentUserId =
     getUserId(currentUser);
 
-  /* ================= OWNER ID ================= */
+  //safe owner id
   const ownerId =
     typeof post?.owner === "object"
       ? getUserId(post.owner)
       : post?.owner;
 
-  /* ================= AUTHOR CHECK ================= */
+  //safe author check
   const isAuthor =
     currentUserId &&
     ownerId &&
     String(currentUserId) ===
       String(ownerId);
 
-  /* ================= DEBUG ================= */
-  console.log("========== POST CARD ==========");
-  console.log("POST:", post);
-  console.log("CURRENT USER:", currentUser);
-  console.log("CURRENT USER ID:", currentUserId);
-  console.log("OWNER:", post?.owner);
-  console.log("OWNER ID:", ownerId);
-  console.log("IS AUTHOR:", isAuthor);
 
-  /* ================= DELETE ================= */
+  //safe delete handler
   const handleDelete = async (e) => {
     e.stopPropagation();
 
@@ -79,7 +71,7 @@ function PostCard({
     }
   };
 
-  /* ================= OPEN POST ================= */
+  //safe open post handler
   const openPost = () => {
     navigate(`/posts/${post._id}`);
   };
