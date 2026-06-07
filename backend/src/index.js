@@ -3,11 +3,6 @@ import "./env.js";
 import connectDB from "./db/index.js";
 import { app } from "./app.js";
 
-console.log("Cloudinary Config:", {
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? "✅ Set" : "❌ Missing",
-  api_key: process.env.CLOUDINARY_API_KEY ? "✅ Set" : "❌ Missing",
-  api_secret: process.env.CLOUDINARY_API_SECRET ? "✅ Set" : "❌ Missing",
-});
 
 connectDB()
   .then(() => {
