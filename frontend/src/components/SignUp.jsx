@@ -82,6 +82,9 @@ function SignUp() {
               <Button type="submit" className="w-full">
                 Create Account
               </Button>
+              <Button type="submit" onClick={userService.googleLogin} className="w-full bg-red-500 hover:bg-red-600">
+                Sign Up with Google
+              </Button>
             </div>
           </form>
         </div>

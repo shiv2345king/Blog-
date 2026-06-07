@@ -83,7 +83,9 @@ const login = async (data) => {
               <Button type="submit" className="w-full">
                 Login
               </Button>
-
+              <Button type="button" onClick={userService.googleLogin} className="w-full bg-red-500 hover:bg-red-600">
+                Sign In with Google
+              </Button>
             </div>
           </form>
 

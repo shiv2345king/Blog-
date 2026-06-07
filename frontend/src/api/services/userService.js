@@ -1,9 +1,7 @@
 import apiCall from "../apiConfig";
 
 export const userService = {
-  // =========================
-  // REGISTER
-  // =========================
+ //register
   register: async (formData) => {
     if (!formData) throw new Error("FormData is required");
 
@@ -15,10 +13,7 @@ export const userService = {
 
     return res; // ✅ FIX: return full response
   },
-
-  // =========================
-  // LOGIN
-  // =========================
+//login
   login: async (credentials) => {
     if (!credentials) throw new Error("Credentials required");
 
@@ -32,7 +27,12 @@ export const userService = {
 
     return res; // ✅ FIX: return full response
   },
-
+  //google login
+  googleLogin:  () => {
+    window.location.href =
+    "https://blog-qifu.onrender.com/api/users/auth/google";
+  }
+,
   // =========================
   // LOGOUT
   // =========================
