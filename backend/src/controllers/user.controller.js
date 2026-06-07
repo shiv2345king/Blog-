@@ -265,4 +265,6 @@ export {
   updateUserAvatar,
   deleteUserAccount,
   getUserProfile,
+  generateAccessAndRefereshTokens,
+  cookieOptions,
 };
