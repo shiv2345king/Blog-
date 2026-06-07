@@ -9,11 +9,6 @@ console.log("Cloudinary Config:", {
   api_secret: process.env.CLOUDINARY_API_SECRET ? "✅ Set" : "❌ Missing",
 });
 
-console.log(
-  "Gemini Key:",
-  process.env.GEMINI_API_KEY ? "✅ Set" : "❌ Missing"
-);
-
 connectDB()
   .then(() => {
     app.listen(process.env.PORT || 5000, () => {
